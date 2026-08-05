@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ tema */
+@theme {
+  --color-ink-950: #07080d;
+  --color-ink-900: #0b0d13;
+  --color-ink-850: #10131c;
+  --color-ink-800: #151823;
+  --color-ink-700: #1b1f2e;
+  --color-ink-600: #232838;
+  --color-ink-500: #2d3348;
+  --color-ink-400: #414a66;
+
+  --color-brand-50: #f2efff;
+  --color-brand-100: #e5dfff;
+  --color-brand-200: #cbbfff;
+  --color-brand-300: #ab97ff;
+  --color-brand-400: #8f74ff;
+  --color-brand-500: #7c5cff;
+  --color-brand-600: #6b46ef;
+  --color-brand-700: #5836c9;
+  --color-brand-800: #452ba0;
+  --color-brand-900: #34217a;
+
+  --color-accent-400: #38e0c4;
+  --color-accent-500: #14c8a8;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-card: 1.125rem;
+}
+
+/* Açık/koyu tema değişkenleri */
+:root {
+  --bg: #f6f7fb;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #eef0f7;
+  --border: #e2e5ee;
+  --border-strong: #d2d7e4;
+  --text: #14161f;
+  --text-muted: #61667a;
+  --text-faint: #8b90a3;
+  --brand: #6b46ef;
+  --brand-soft: #ede9ff;
+  --ring: rgba(124, 92, 255, 0.35);
+  --shadow: 0 1px 2px rgba(16, 19, 28, 0.06), 0 8px 24px -12px rgba(16, 19, 28, 0.12);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0b0d13;
+  --bg-elevated: #151823;
+  --bg-subtle: #10131c;
+  --border: #232838;
+  --border-strong: #2d3348;
+  --text: #f2f4f8;
+  --text-muted: #9aa1b4;
+  --text-faint: #6b7288;
+  --brand: #8f74ff;
+  --brand-soft: rgba(124, 92, 255, 0.14);
+  --ring: rgba(143, 116, 255, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px -16px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* ---------------------------------------------------------------- yardımcı */
+@layer utilities {
+  .surface {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .surface-subtle {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+  }
+  .text-muted {
+    color: var(--text-muted);
+  }
+  .text-faint {
+    color: var(--text-faint);
+  }
+  .brand-text {
+    color: var(--brand);
+  }
+  .brand-bg {
+    background: var(--brand);
+  }
+  .brand-soft-bg {
+    background: var(--brand-soft);
+  }
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .glass {
+    background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(160%);
+  }
+}
+
+/* İnce kaydırma çubuğu */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* -------------------------------------------------------------- animasyon */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -22px) scale(1.06); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pop {
+  animation: pop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border-strong) 60%, transparent), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Auth sayfalarındaki hareketli arka plan */
+.aurora {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.5;
+  animation: float-slow 14s ease-in-out infinite;
+  pointer-events: none;
+}

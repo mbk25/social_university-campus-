@@ -1,0 +1,44 @@
+{
+  "name": "social-university",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sadece üniversite öğrencilerine özel sosyal medya platformu",
+  "//workspaces": "Glob kullanılıyor: API'nin Docker imajı yalnızca packages/shared + apps/api kopyalayıp kurulum yapabilsin diye (bkz. .dockerignore).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "pg:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pg-start.ps1",
+    "pg:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pg-stop.ps1",
+    "setup": "npm install && npm run build -w @kampus/shared && npm run prisma:generate -w @kampus/api",
+    "migrate": "npm run prisma:migrate -w @kampus/api",
+    "db:push": "npm run prisma:push -w @kampus/api",
+    "seed": "npm run seed -w @kampus/api",
+    "seed:demo": "npm run seed:demo -w @kampus/api",
+    "studio": "npm run prisma:studio -w @kampus/api",
+    "dev": "concurrently -n api,web -c magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev -w @kampus/api",
+    "dev:web": "npm run dev -w @kampus/web",
+    "dev:mobile": "npm run start -w @kampus/mobile",
+    "build": "npm run build -w @kampus/shared && npm run build -w @kampus/api && npm run build -w @kampus/web",
+    "lint": "npm run lint -w @kampus/web"
+  },
+  "//devDependencies": "@types/react kökte tutulur: react-native kök node_modules'a hoist edildiği için tip dosyaları React tiplerini ancak buradan çözebiliyor.",
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.2"
+  },
+  "//overrides": "Web (Next 15) ve mobil (Expo 53) tek React sürümü kullanmalı; aksi halde workspace'lerden biri React'i kendi node_modules'ına yuvalayıp 'invalid hook call' hatası veriyor.",
+  "overrides": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@types/react": "^19.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

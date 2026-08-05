@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Kampus",
+    "slug": "kampus",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "kampus",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "backgroundColor": "#0b0d13",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0b0d13"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.kampus.mobile"
+    },
+    "android": {
+      "package": "app.kampus.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b0d13"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kampus, gönderi ve profil fotoğrafı seçebilmek için galerine erişmek istiyor."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "http://localhost:4100"
+    }
+  }
+}

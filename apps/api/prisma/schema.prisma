@@ -1,0 +1,702 @@
+// Kampus — sadece üniversite öğrencilerine açık sosyal ağ
+// Veri modeli
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ────────────────────────────────────────────────────────── Üniversite / Kullanıcı
+
+enum UniversityType {
+  STATE
+  FOUNDATION
+  OTHER
+}
+
+model University {
+  id        String         @id @default(cuid())
+  name      String         @unique
+  shortName String
+  city      String
+  type      UniversityType @default(STATE)
+  logoUrl   String?
+  /// Kabul edilen e-posta alan adları. Alt alan adları da eşleşir.
+  domains   String[]
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+
+  users        User[]
+  communities  Community[]
+  events       Event[]
+  notes        Note[]
+  confessions  Confession[]
+
+  @@index([city])
+}
+
+enum UserRole {
+  STUDENT
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  emailDomain  String
+  passwordHash String
+  username     String     @unique
+  displayName  String
+  bio          String?    @db.VarChar(280)
+  avatarUrl    String?
+  coverUrl     String?
+
+  universityId String?
+  university   University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+  department   String?
+  classYear    Int?
+  interests    String[]
+
+  role      UserRole   @default(STUDENT)
+  status    UserStatus @default(PENDING_VERIFICATION)
+  /// Öğrenci alt alan adından (@ogr.*) kayıt olduysa true
+  isStudentAddress Boolean @default(false)
+  verifiedAt DateTime?
+  karma      Int        @default(0)
+
+  isPrivate      Boolean @default(false)
+  showDepartment Boolean @default(true)
+  pushToken      String?
+
+  suspendedUntil DateTime?
+  suspendReason  String?
+
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  posts             Post[]
+  comments          Comment[]
+  postLikes         PostLike[]
+  commentLikes      CommentLike[]
+  bookmarks         Bookmark[]
+  pollVotes         PollVote[]
+  refreshTokens     RefreshToken[]
+  memberships       CommunityMember[]
+  createdCommunities Community[]         @relation("CommunityCreator")
+  joinRequests      CommunityJoinRequest[]
+  following         Follow[]            @relation("Follower")
+  followers         Follow[]            @relation("Following")
+  blocksMade        Block[]             @relation("Blocker")
+  blocksReceived    Block[]             @relation("Blocked")
+  conversations     ConversationMember[]
+  messages          Message[]
+  notifications     Notification[]      @relation("NotificationRecipient")
+  actorNotifications Notification[]     @relation("NotificationActor")
+  createdEvents     Event[]
+  eventAttendances  EventAttendee[]
+  notes             Note[]
+  noteRatings       NoteRating[]
+  confessions       Confession[]
+  confessionLikes   ConfessionLike[]
+  reportsMade       Report[]            @relation("Reporter")
+  badges            UserBadge[]
+
+  @@index([universityId, department])
+  @@index([karma])
+  @@index([createdAt])
+}
+
+/// Kayıt ve şifre sıfırlama için tek kullanımlık e-posta kodu.
+enum VerificationPurpose {
+  REGISTER
+  PASSWORD_RESET
+  EMAIL_CHANGE
+}
+
+model VerificationCode {
+  id        String              @id @default(cuid())
+  email     String
+  codeHash  String
+  purpose   VerificationPurpose @default(REGISTER)
+  attempts  Int                 @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// ────────────────────────────────────────────────────────────────── Topluluk
+
+enum CommunityScope {
+  DEPARTMENT // belirli bir üniversitenin belirli bir bölümü
+  UNIVERSITY // belirli bir üniversitenin tamamı
+  GLOBAL     // tüm üniversitelerden öğrenciler
+}
+
+enum CommunityVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum CommunityRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+model Community {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  description String?             @db.VarChar(500)
+  avatarUrl   String?
+  coverUrl    String?
+  scope       CommunityScope
+  visibility  CommunityVisibility @default(PUBLIC)
+
+  universityId String?
+  university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  department   String?
+
+  tags  String[]
+  rules String[]
+
+  createdById String
+  createdBy   User   @relation("CommunityCreator", fields: [createdById], references: [id])
+
+  memberCount Int @default(0)
+  postCount   Int @default(0)
+
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members       CommunityMember[]
+  joinRequests  CommunityJoinRequest[]
+  posts         Post[]
+  events        Event[]
+  conversations Conversation[]
+
+  @@index([scope, universityId])
+  @@index([department])
+  @@index([memberCount])
+}
+
+model CommunityMember {
+  communityId String
+  userId      String
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        CommunityRole @default(MEMBER)
+  isMuted     Boolean       @default(false)
+  joinedAt    DateTime      @default(now())
+
+  @@id([communityId, userId])
+  @@index([userId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CommunityJoinRequest {
+  id          String            @id @default(cuid())
+  communityId String
+  userId      String
+  community   Community         @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message     String?           @db.VarChar(300)
+  status      JoinRequestStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  resolvedAt  DateTime?
+
+  @@unique([communityId, userId])
+  @@index([communityId, status])
+}
+
+// ────────────────────────────────────────────────────────────────── Gönderi
+
+model Post {
+  id      String @id @default(cuid())
+  content String @db.VarChar(2000)
+  /// MediaAsset[] — { url, type, width, height, name, size }
+  media   Json   @default("[]")
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  isAnonymous    Boolean @default(false)
+  anonymousAlias String?
+
+  hashtags String[]
+
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+  /// Sıralamada kullanılan puan (beğeni/yorum/tazelik)
+  hotScore     Float @default(0)
+
+  isPinned  Boolean   @default(false)
+  editedAt  DateTime?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  comments  Comment[]
+  likes     PostLike[]
+  bookmarks Bookmark[]
+  poll      Poll?
+
+  @@index([createdAt])
+  @@index([communityId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([hotScore])
+  @@index([hashtags], type: Gin)
+}
+
+model Poll {
+  id        String       @id @default(cuid())
+  postId    String       @unique
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  question  String       @db.VarChar(140)
+  endsAt    DateTime
+  options   PollOption[]
+  votes     PollVote[]
+  createdAt DateTime     @default(now())
+}
+
+model PollOption {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String     @db.VarChar(60)
+  position  Int
+  voteCount Int        @default(0)
+  votes     PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  pollId    String
+  userId    String
+  optionId  String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@id([pollId, userId])
+  @@index([optionId])
+}
+
+model Comment {
+  id       String  @id @default(cuid())
+  postId   String
+  post     Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  content String @db.VarChar(1000)
+
+  likeCount  Int @default(0)
+  replyCount Int @default(0)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  likes CommentLike[]
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+}
+
+model PostLike {
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([postId, userId])
+  @@index([userId])
+}
+
+model CommentLike {
+  commentId String
+  userId    String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([commentId, userId])
+  @@index([userId])
+}
+
+model Bookmark {
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([postId, userId])
+  @@index([userId, createdAt])
+}
+
+// ──────────────────────────────────────────────────────────────────── Sohbet
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  COMMUNITY
+}
+
+model Conversation {
+  id    String           @id @default(cuid())
+  type  ConversationType @default(DIRECT)
+  title String?
+  avatarUrl String?
+
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  /// DIRECT sohbetlerde iki kullanıcı arasında tek sohbet olmasını garanti eder
+  directKey String? @unique
+
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime     @default(now())
+  isMuted        Boolean      @default(false)
+  joinedAt       DateTime     @default(now())
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content     String  @db.VarChar(4000)
+  attachments Json    @default("[]")
+
+  replyToId String?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReplies")
+
+  clientNonce String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([conversationId, createdAt])
+  @@unique([conversationId, senderId, clientNonce])
+}
+
+// ──────────────────────────────────────────────────────────────── Bildirim
+
+enum NotificationType {
+  FOLLOW
+  POST_LIKE
+  COMMENT
+  COMMENT_LIKE
+  COMMENT_REPLY
+  MENTION
+  COMMUNITY_INVITE
+  COMMUNITY_JOIN_REQUEST
+  COMMUNITY_JOIN_APPROVED
+  COMMUNITY_POST
+  EVENT_REMINDER
+  EVENT_NEW
+  MESSAGE
+  BADGE_EARNED
+  SYSTEM
+}
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  type   NotificationType
+
+  actorId String?
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  text   String
+  link   String?
+  /// İlgili kaydın id'si (post, comment, community, ...)
+  entityId String?
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+// ──────────────────────────────────────────────────────────────── Etkinlik
+
+model Event {
+  id          String  @id @default(cuid())
+  title       String  @db.VarChar(120)
+  description String? @db.VarChar(2000)
+  location    String? @db.VarChar(200)
+  isOnline    Boolean @default(false)
+  coverUrl    String?
+
+  startsAt DateTime
+  endsAt   DateTime?
+  capacity Int?
+
+  creatorId String
+  creator   User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  universityId String?
+  university   University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+
+  attendeeCount Int      @default(0)
+  isCancelled   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  attendees EventAttendee[]
+
+  @@index([startsAt])
+  @@index([universityId, startsAt])
+  @@index([communityId, startsAt])
+}
+
+model EventAttendee {
+  eventId   String
+  userId    String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([eventId, userId])
+  @@index([userId])
+}
+
+// ──────────────────────────────────────────────────────── Ders notu paylaşımı
+
+enum NoteVisibility {
+  UNIVERSITY
+  GLOBAL
+}
+
+model Note {
+  id          String  @id @default(cuid())
+  title       String  @db.VarChar(140)
+  description String? @db.VarChar(1000)
+  courseCode  String? @db.VarChar(20)
+  courseName  String  @db.VarChar(120)
+  department  String?
+  /// MediaAsset[]
+  files       Json    @default("[]")
+
+  visibility NoteVisibility @default(UNIVERSITY)
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  universityId String?
+  university   University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+
+  downloadCount Int   @default(0)
+  ratingSum     Int   @default(0)
+  ratingCount   Int   @default(0)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  ratings NoteRating[]
+
+  @@index([universityId, department])
+  @@index([courseCode])
+  @@index([createdAt])
+}
+
+model NoteRating {
+  noteId    String
+  userId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  createdAt DateTime @default(now())
+
+  @@id([noteId, userId])
+}
+
+// ─────────────────────────────────────────────────────────── Anonim itiraf
+
+enum ConfessionScope {
+  UNIVERSITY
+  GLOBAL
+}
+
+model Confession {
+  id      String          @id @default(cuid())
+  content String          @db.VarChar(1000)
+  alias   String
+  topic   String?         @db.VarChar(30)
+  scope   ConfessionScope @default(UNIVERSITY)
+
+  /// Sadece moderasyon için tutulur, hiçbir API yanıtında dönmez.
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  universityId String?
+  university   University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
+  isHidden  Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  likes ConfessionLike[]
+
+  @@index([universityId, createdAt])
+  @@index([scope, createdAt])
+}
+
+model ConfessionLike {
+  confessionId String
+  userId       String
+  confession   Confession @relation(fields: [confessionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([confessionId, userId])
+}
+
+// ────────────────────────────────────────────────────────── Moderasyon / Rozet
+
+enum ReportTargetType {
+  POST
+  COMMENT
+  USER
+  COMMUNITY
+  MESSAGE
+  CONFESSION
+  NOTE
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  MISINFORMATION
+  IMPERSONATION
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  reporter   User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType ReportTargetType
+  targetId   String
+  reason     ReportReason
+  details    String?          @db.VarChar(500)
+  status     ReportStatus     @default(OPEN)
+  handledBy  String?
+  handledAt  DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+model UserBadge {
+  userId   String
+  code     String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  earnedAt DateTime @default(now())
+
+  @@id([userId, code])
+}

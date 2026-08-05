@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kampus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kampus
+      POSTGRES_PASSWORD: kampus
+      POSTGRES_DB: kampus
+    ports:
+      - "5432:5432"
+    volumes:
+      - kampus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kampus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Geliştirme sırasında gönderilen doğrulama maillerini tarayıcıdan okumak için.
+  # Arayüz: http://localhost:8025  |  SMTP: localhost:1025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: kampus_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  kampus_pgdata:
