@@ -120,21 +120,24 @@ Migration'lar açılışta otomatik uygulanır (`prisma migrate deploy`).
 
 ### Üniversite listesini yükle
 
-Tablolar boş gelir; 190 üniversiteyi bir kez yüklemek gerekir. Railway'in
-**Shell** sekmesinde:
+Migration tabloları oluşturur ama içlerini doldurmaz; 190 üniversiteyi bir kez
+yüklemek gerekir. Bunu **kendi bilgisayarından** yap — sunucu imajında `tsx`
+bulunmuyor.
+
+Kendi terminalinde, `DATABASE_URL`'i tek seferlik Neon adresine yönlendirerek:
 
 ```bash
-node -e "require('./apps/api/dist/../../packages/shared/dist/index.js')" 2>/dev/null; npx tsx apps/api/prisma/seed.ts
+$env:DATABASE_URL="<Neon adresi>"; npm run seed
 ```
 
-Çalışmazsa kendi bilgisayarından da yapabilirsin — `.env` içindeki
-`DATABASE_URL`'i geçici olarak Neon adresiyle değiştirip:
+Bu yalnızca o terminal oturumunu etkiler, `.env` dosyana dokunmaz — pencereyi
+kapattığında yerel ayarların geri gelir.
 
-```bash
-npm run seed
-```
+Yüklendiğini doğrulamak için tarayıcıdan:
+`https://API_ADRESI/api/v1/meta/universities` → 190 kayıt dönmeli.
 
-Sonra `.env`'i eski hâline döndürmeyi unutma.
+> Demo gönderi/kullanıcı **yükleme** (`seed:demo`). Gerçek kullanıcıların
+> göreceği bir ortamda sahte hesaplar istemezsin.
 
 ---
 
