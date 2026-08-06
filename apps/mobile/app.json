@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0b0d13"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.kampus.mobile"
@@ -36,13 +38,15 @@
         {
           "photosPermission": "Kampus, gönderi ve profil fotoğrafı seçebilmek için galerine erişmek istiyor."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": false
     },
     "extra": {
-      "apiUrl": "http://localhost:4100"
+      "apiUrl": "https://socialuniversity-campus-production.up.railway.app",
+      "webUrl": "https://social-university-campus-web.vercel.app"
     }
   }
 }

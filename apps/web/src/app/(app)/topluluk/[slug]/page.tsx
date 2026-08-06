@@ -7,7 +7,7 @@ import { ApiError, api } from "@/lib/api";
 import type { Community, MiniUser } from "@/lib/types";
 import { Composer } from "@/components/Composer";
 import { Feed, type FeedHandle } from "@/components/Feed";
-import { ChatIcon, LockIcon, ShieldCheckIcon, UsersIcon } from "@/components/icons";
+import { ChatIcon, LockIcon, ShareIcon, ShieldCheckIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Button, EmptyState, Skeleton, cx, formatCount, useToast } from "@/components/ui";
 
 const SCOPE_LABEL = {
@@ -29,6 +29,7 @@ export default function CommunityPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("POSTS");
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
   const feedRef = useRef<FeedHandle | null>(null);
 
   const onFeedReady = useCallback((handle: FeedHandle) => {
@@ -86,6 +87,21 @@ export default function CommunityPage() {
       router.push(`/mesajlar/${data.conversation.id}`);
     } catch (err) {
       toast.show(err instanceof ApiError ? err.message : "Sohbet açılamadı", "error");
+    }
+  }
+
+  async function shareCommunity() {
+    if (!community) return;
+    // Adres çubuğu yerine kanonik adres: eski/yeni slug karışmasın.
+    const url = `${window.location.origin}/topluluk/${community.slug}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.show("Bağlantı kopyalandı", "success");
+    } catch {
+      toast.show("Bağlantı kopyalanamadı", "error");
     }
   }
 
@@ -185,6 +201,17 @@ export default function CommunityPage() {
               </span>
               {community.university && <span>{community.university.name}</span>}
               {community.department && <span>{community.department}</span>}
+            </div>
+
+            <div className="mt-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={shareCommunity}
+                icon={<ShareIcon width={15} height={15} />}
+              >
+                {copied ? "Bağlantı kopyalandı" : "Paylaş"}
+              </Button>
             </div>
 
             {community.tags.length > 0 && (

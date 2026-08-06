@@ -32,7 +32,8 @@ export const UNIVERSITIES: UniversitySeed[] = [
   { name: "Yıldız Teknik Üniversitesi", shortName: "YTÜ", city: "İstanbul", type: "STATE", domains: ["yildiz.edu.tr", "std.yildiz.edu.tr"] },
   { name: "Galatasaray Üniversitesi", shortName: "GSÜ", city: "İstanbul", type: "STATE", domains: ["gsu.edu.tr"] },
   { name: "Mimar Sinan Güzel Sanatlar Üniversitesi", shortName: "MSGSÜ", city: "İstanbul", type: "STATE", domains: ["msgsu.edu.tr"] },
-  { name: "İstanbul Medeniyet Üniversitesi", shortName: "İMÜ", city: "İstanbul", type: "STATE", domains: ["medeniyet.edu.tr"] },
+  // Öğrenci adresleri ayrı bir alan adında veriliyor: ogrenci_no@ismu.edu.tr
+  { name: "İstanbul Medeniyet Üniversitesi", shortName: "İMÜ", city: "İstanbul", type: "STATE", domains: ["medeniyet.edu.tr", "ismu.edu.tr"] },
   { name: "Türk-Alman Üniversitesi", shortName: "TAÜ", city: "İstanbul", type: "STATE", domains: ["tau.edu.tr"] },
   { name: "Koç Üniversitesi", shortName: "KU", city: "İstanbul", type: "FOUNDATION", domains: ["ku.edu.tr"] },
   { name: "Sabancı Üniversitesi", shortName: "SU", city: "İstanbul", type: "FOUNDATION", domains: ["sabanciuniv.edu"] },

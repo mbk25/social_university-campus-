@@ -32,6 +32,10 @@ function resolveApiUrl(): string {
 export const API_URL = resolveApiUrl();
 export const API_BASE = `${API_URL}/api/v1`;
 
+/** Web arayüzünün adresi — paylaşılan bağlantılar buraya işaret eder. */
+export const WEB_URL =
+  (Constants.expoConfig?.extra as { webUrl?: string } | undefined)?.webUrl ?? "";
+
 const ACCESS_KEY = "kampus.access";
 const REFRESH_KEY = "kampus.refresh";
 

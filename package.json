@@ -32,13 +32,19 @@
     "concurrently": "^9.1.0",
     "typescript": "^5.7.2"
   },
-  "//overrides": "Web (Next 15) ve mobil (Expo 53) tek React sürümü kullanmalı; aksi halde workspace'lerden biri React'i kendi node_modules'ına yuvalayıp 'invalid hook call' hatası veriyor.",
+  "//overrides": "Web (Next 15) ve mobil (Expo 53) tek React sürümü kullanmalı; aksi halde workspace'lerden biri React'i kendi node_modules'ına yuvalayıp 'invalid hook call' hatası veriyor. React sürümü BİREBİR sabit olmalı (^ ile değil): react-native 0.79.2 içindeki react-native-renderer 19.0.0'a bağlı ve React 'exact same version' şartı koyuyor; ^19.0.0 npm'e 19.2.8'i seçtiriyor ve mobil uygulama 'Incompatible React versions' ile açılmıyor. expo-font ise @expo/vector-icons tarafından 'expo-font: *' ile isteniyor; npm bunu en yeni sürüme çözüp köke koyuyor, Gradle autolinking de onu derleyip 'NoSuchMethodError: getDirectConverter' ile çöküyor. SDK 53'ün sürümüne sabitliyoruz.",
   "overrides": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@types/react": "^19.2.0"
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "@types/react": "^19.2.0",
+    "expo-font": "~13.3.2"
   },
   "engines": {
     "node": ">=20"
+  },
+  "//dependencies": "Bu ikisi mobil derleme için kökte TUTULMAK ZORUNDA, workspace'lerde değil. expo-font: overrides tek başına yetmiyor (npm mevcut lockfile çözümünü koruyor) ve Gradle autolinking kökteki kopyayı derliyor; yanlış sürüm derlenirse uygulama açılışta 'NoSuchMethodError: getDirectConverter' ile çöküyor. scheduler: react-native'in bağımlılığı ama npm onu react-native/node_modules içine yuvalıyor; metro.config.js'teki disableHierarchicalLookup yuvalanmış paketleri görmediği için 'Unable to resolve scheduler' hatası çıkıyor.",
+  "dependencies": {
+    "expo-font": "~13.3.2",
+    "scheduler": "^0.25.0"
   }
 }

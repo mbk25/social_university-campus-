@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text, View } from "react-native";
-import { ApiError, api } from "../../src/lib/api";
+import { Share, Text, View } from "react-native";
+import { ApiError, WEB_URL, api } from "../../src/lib/api";
 import { formatCount, palette, radius, spacing } from "../../src/lib/theme";
 import type { Community } from "../../src/lib/types";
 import { FeedList } from "../../src/components/FeedList";
@@ -63,6 +63,17 @@ export default function CommunityScreen() {
       router.push(`/sohbet/${data.conversation.id}`);
     } catch (err) {
       if (err instanceof ApiError) console.warn(err.message);
+    }
+  }
+
+  async function shareCommunity() {
+    if (!community) return;
+    const url = `${WEB_URL}/topluluk/${community.slug}`;
+    try {
+      // Sistemin paylaş menüsü: WhatsApp, mesajlar, kopyala hepsi burada.
+      await Share.share({ message: `${community.name} — Kampus\n${url}`, url });
+    } catch {
+      // Kullanıcı vazgeçti; sessizce geç.
     }
   }
 
@@ -139,6 +150,15 @@ export default function CommunityScreen() {
               style={{ flex: 1 }}
             />
           )}
+        </View>
+
+        <View style={{ marginTop: spacing.sm }}>
+          <Button
+            title="Paylaş"
+            variant="secondary"
+            icon="share-outline"
+            onPress={shareCommunity}
+          />
         </View>
       </View>
 
