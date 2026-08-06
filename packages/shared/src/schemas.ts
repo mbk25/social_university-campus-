@@ -46,6 +46,11 @@ export const registerCompleteSchema = z.object({
   acceptedTerms: z.literal(true, {
     errorMap: () => ({ message: "Kullanım koşullarını kabul etmelisiniz" }),
   }),
+  /**
+   * Yalnızca e-posta alan adı listede bulunamadığında gönderilir; kullanıcı
+   * üniversitesini kendisi seçer. Sunucu değeri ayrıca doğrular.
+   */
+  universityId: z.string().trim().min(1).optional(),
 });
 
 export const loginSchema = z.object({

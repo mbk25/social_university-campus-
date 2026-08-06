@@ -26,7 +26,8 @@ export const UNIVERSITIES: UniversitySeed[] = [
   // ---------------------------------------------------------------- İstanbul
   { name: "Boğaziçi Üniversitesi", shortName: "BOUN", city: "İstanbul", type: "STATE", domains: ["boun.edu.tr"] },
   { name: "İstanbul Teknik Üniversitesi", shortName: "İTÜ", city: "İstanbul", type: "STATE", domains: ["itu.edu.tr"] },
-  { name: "İstanbul Üniversitesi", shortName: "İÜ", city: "İstanbul", type: "STATE", domains: ["istanbul.edu.tr"] },
+  // Öğrenci adresleri ogr.iu.edu.tr'de; iu.edu.tr'nin MX kaydı gw.istanbul.edu.tr'yi gösteriyor.
+  { name: "İstanbul Üniversitesi", shortName: "İÜ", city: "İstanbul", type: "STATE", domains: ["istanbul.edu.tr", "iu.edu.tr"] },
   { name: "İstanbul Üniversitesi-Cerrahpaşa", shortName: "İÜC", city: "İstanbul", type: "STATE", domains: ["iuc.edu.tr"] },
   { name: "Marmara Üniversitesi", shortName: "MÜ", city: "İstanbul", type: "STATE", domains: ["marmara.edu.tr"] },
   { name: "Yıldız Teknik Üniversitesi", shortName: "YTÜ", city: "İstanbul", type: "STATE", domains: ["yildiz.edu.tr", "std.yildiz.edu.tr"] },
@@ -156,7 +157,7 @@ export const UNIVERSITIES: UniversitySeed[] = [
   { name: "Isparta Uygulamalı Bilimler Üniversitesi", shortName: "ISUBÜ", city: "Isparta", type: "STATE", domains: ["isparta.edu.tr"] },
   { name: "Aydın Adnan Menderes Üniversitesi", shortName: "ADÜ", city: "Aydın", type: "STATE", domains: ["adu.edu.tr"] },
   { name: "Muğla Sıtkı Koçman Üniversitesi", shortName: "MSKÜ", city: "Muğla", type: "STATE", domains: ["mu.edu.tr"] },
-  { name: "Manisa Celal Bayar Üniversitesi", shortName: "MCBÜ", city: "Manisa", type: "STATE", domains: ["cbu.edu.tr"] },
+  { name: "Manisa Celal Bayar Üniversitesi", shortName: "MCBÜ", city: "Manisa", type: "STATE", domains: ["cbu.edu.tr", "mcbu.edu.tr"] },
   { name: "Balıkesir Üniversitesi", shortName: "BAUN", city: "Balıkesir", type: "STATE", domains: ["balikesir.edu.tr"] },
   { name: "Bandırma Onyedi Eylül Üniversitesi", shortName: "BANÜ", city: "Balıkesir", type: "STATE", domains: ["bandirma.edu.tr"] },
   { name: "Çanakkale Onsekiz Mart Üniversitesi", shortName: "ÇOMÜ", city: "Çanakkale", type: "STATE", domains: ["comu.edu.tr"] },
@@ -221,7 +222,7 @@ export const UNIVERSITIES: UniversitySeed[] = [
   { name: "Kilis 7 Aralık Üniversitesi", shortName: "KİLİS", city: "Kilis", type: "STATE", domains: ["kilis.edu.tr"] },
 
   // ---------------------------------------------------------------- KKTC
-  { name: "Doğu Akdeniz Üniversitesi", shortName: "DAÜ", city: "Gazimağusa (KKTC)", type: "OTHER", domains: ["emu.edu.tr"] },
+  { name: "Doğu Akdeniz Üniversitesi", shortName: "DAÜ", city: "Gazimağusa (KKTC)", type: "OTHER", domains: ["emu.edu.tr", "dau.edu.tr"] },
   { name: "Yakın Doğu Üniversitesi", shortName: "YDÜ", city: "Lefkoşa (KKTC)", type: "OTHER", domains: ["neu.edu.tr"] },
   { name: "Uluslararası Kıbrıs Üniversitesi", shortName: "UKÜ", city: "Lefkoşa (KKTC)", type: "OTHER", domains: ["ciu.edu.tr"] },
   { name: "Girne Amerikan Üniversitesi", shortName: "GAÜ", city: "Girne (KKTC)", type: "OTHER", domains: ["gau.edu.tr"] },

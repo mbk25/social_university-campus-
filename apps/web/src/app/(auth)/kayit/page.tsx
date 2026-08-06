@@ -42,6 +42,8 @@ export default function RegisterPage() {
     message?: string;
     taken?: boolean;
     isStudentAddress?: boolean;
+    /** Alan adı listede yok; kullanıcı üniversitesini kendisi seçecek. */
+    needsUniversitySelection?: boolean;
   } | null>(null);
 
   // adım 2
@@ -61,6 +63,8 @@ export default function RegisterPage() {
   const [classYear, setClassYear] = useState(1);
   const [accepted, setAccepted] = useState(false);
   const [groups, setGroups] = useState<DepartmentGroup[]>([]);
+  const [universityId, setUniversityId] = useState("");
+  const [universities, setUniversities] = useState<{ id: string; name: string; city: string }[]>([]);
 
   const emailTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,6 +76,17 @@ export default function RegisterPage() {
       .then((d) => setGroups(d.groups))
       .catch(() => undefined);
   }, []);
+
+  // Üniversite listesi — yalnızca alan adı tanınmadığında seçtireceğiz.
+  useEffect(() => {
+    if (!check?.needsUniversitySelection || universities.length > 0) return;
+    api
+      .get<{ items: { id: string; name: string; city: string }[] }>("/meta/universities", {
+        auth: false,
+      })
+      .then((d) => setUniversities(d.items))
+      .catch(() => undefined);
+  }, [check?.needsUniversitySelection, universities.length]);
 
   // Yeniden gönderme sayacı
   useEffect(() => {
@@ -204,6 +219,7 @@ export default function RegisterPage() {
           department,
           classYear,
           acceptedTerms: true,
+          ...(check?.needsUniversitySelection ? { universityId } : {}),
         },
         { auth: false },
       );
@@ -232,6 +248,7 @@ export default function RegisterPage() {
     displayName.trim().length >= 2 &&
     passwordOk &&
     !!department &&
+    (!check?.needsUniversitySelection || !!universityId) &&
     accepted;
 
   return (
@@ -294,12 +311,17 @@ export default function RegisterPage() {
                     ) : check.allowed ? (
                       <>
                         <span className="font-semibold">
-                          {check.university?.name ?? "Akademik adres"} doğrulandı
+                          {check.university?.name ?? "Akademik adres doğrulandı"}
+                          {check.university ? " doğrulandı" : ""}
                         </span>
-                        {check.university && (
+                        {check.university ? (
                           <span className="block text-muted">
                             {check.university.city}
                             {check.isStudentAddress ? " · öğrenci adresi" : ""}
+                          </span>
+                        ) : (
+                          <span className="block text-muted">
+                            Üniversiteni tanıyamadık — birazdan listeden kendin seçeceksin.
                           </span>
                         )}
                       </>
@@ -437,6 +459,23 @@ export default function RegisterPage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 error={fieldErrors.displayName}
               />
+
+              {check?.needsUniversitySelection && (
+                <Select
+                  label="Üniversiten"
+                  value={universityId}
+                  onChange={(e) => setUniversityId(e.target.value)}
+                  error={fieldErrors.universityId}
+                  hint="Adresini tanıyamadık, üniversiteni sen seç."
+                >
+                  <option value="">Üniversite seç…</option>
+                  {universities.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} — {u.city}
+                    </option>
+                  ))}
+                </Select>
+              )}
 
               <Select
                 label="Bölümün"

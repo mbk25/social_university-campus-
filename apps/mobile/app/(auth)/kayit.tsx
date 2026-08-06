@@ -29,6 +29,8 @@ interface EmailCheck {
   message?: string;
   isStudentAddress?: boolean;
   university?: { id: string; name: string; city: string } | null;
+  /** Alan adı listede yok; kullanıcı üniversitesini kendisi seçecek. */
+  needsUniversitySelection?: boolean;
 }
 
 export default function RegisterScreen() {
@@ -54,6 +56,9 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [classYear, setClassYear] = useState(1);
+  const [universityId, setUniversityId] = useState("");
+  const [universities, setUniversities] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [showUniversities, setShowUniversities] = useState(false);
   const [groups, setGroups] = useState<DepartmentGroup[]>([]);
   const [showDepartments, setShowDepartments] = useState(false);
 
@@ -66,6 +71,17 @@ export default function RegisterScreen() {
       .then((d) => setGroups(d.groups))
       .catch(() => undefined);
   }, []);
+
+  // Üniversite listesi — yalnızca alan adı tanınmadığında seçtireceğiz.
+  useEffect(() => {
+    if (!check?.needsUniversitySelection || universities.length > 0) return;
+    api
+      .get<{ items: { id: string; name: string; city: string }[] }>("/meta/universities", {
+        auth: false,
+      })
+      .then((d) => setUniversities(d.items))
+      .catch(() => undefined);
+  }, [check?.needsUniversitySelection, universities.length]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -183,6 +199,7 @@ export default function RegisterScreen() {
           department,
           classYear,
           acceptedTerms: true,
+          ...(check?.needsUniversitySelection ? { universityId } : {}),
         },
         { auth: false },
       );
@@ -209,7 +226,8 @@ export default function RegisterScreen() {
     usernameState?.available === true &&
     displayName.trim().length >= 2 &&
     passwordOk &&
-    !!department;
+    !!department &&
+    (!check?.needsUniversitySelection || !!universityId);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: palette.bg }}>
@@ -417,6 +435,92 @@ export default function RegisterScreen() {
                 onChangeText={setDisplayName}
                 error={fieldErrors.displayName}
               />
+
+              {check?.needsUniversitySelection && (
+                <View>
+                  <Text
+                    style={{
+                      color: palette.textMuted,
+                      fontSize: 13,
+                      fontWeight: "600",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Üniversiten
+                  </Text>
+                  <Text style={{ color: palette.textFaint, fontSize: 12.5, marginBottom: 6 }}>
+                    Adresini tanıyamadık, üniversiteni sen seç.
+                  </Text>
+                  <Pressable
+                    onPress={() => setShowUniversities((v) => !v)}
+                    style={{
+                      backgroundColor: palette.bgSubtle,
+                      borderWidth: 1,
+                      borderColor: palette.border,
+                      borderRadius: radius.md,
+                      paddingHorizontal: 14,
+                      paddingVertical: 13,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: universityId ? palette.text : palette.textFaint,
+                        fontSize: 15,
+                        flex: 1,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {universities.find((u) => u.id === universityId)?.name || "Üniversite seç…"}
+                    </Text>
+                    <Ionicons
+                      name={showUniversities ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color={palette.textMuted}
+                    />
+                  </Pressable>
+
+                  {showUniversities && (
+                    <View
+                      style={{
+                        marginTop: 8,
+                        maxHeight: 280,
+                        backgroundColor: palette.bgElevated,
+                        borderWidth: 1,
+                        borderColor: palette.border,
+                        borderRadius: radius.md,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <ScrollView nestedScrollEnabled>
+                        {universities.map((u) => (
+                          <Pressable
+                            key={u.id}
+                            onPress={() => {
+                              setUniversityId(u.id);
+                              setShowUniversities(false);
+                            }}
+                            style={{ paddingHorizontal: 14, paddingVertical: 11 }}
+                          >
+                            <Text
+                              style={{
+                                color: universityId === u.id ? palette.brand : palette.text,
+                                fontSize: 14.5,
+                                fontWeight: universityId === u.id ? "700" : "400",
+                              }}
+                            >
+                              {u.name}
+                            </Text>
+                            <Text style={{ color: palette.textFaint, fontSize: 12 }}>{u.city}</Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              )}
 
               <View>
                 <Text

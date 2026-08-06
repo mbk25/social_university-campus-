@@ -12,6 +12,13 @@ export interface ResolvedUniversity {
   domain: string;
   isStudentAddress: boolean;
   university: { id: string; name: string; shortName: string; city: string } | null;
+  /**
+   * Adres akademik ama alan adı listede yok. Kullanıcı engellenmez;
+   * üniversitesini kayıt sırasında kendisi seçer. Sonradan listeye
+   * eklenecek alan adları `user.emailDomain` + `universityId` ikilisinden
+   * çıkarılabilir.
+   */
+  needsSelection: boolean;
 }
 
 /**
@@ -38,12 +45,26 @@ export async function resolveUniversityForEmail(email: string): Promise<Resolved
       );
     }
 
-    return { domain, university, isStudentAddress: isStudentSubdomain(domain) };
+    return { domain, university, isStudentAddress: isStudentSubdomain(domain), needsSelection: false };
   }
 
-  if (env.ALLOWED_DOMAIN_MODE === "edu" && looksLikeAcademicDomain(domain)) {
-    // Esnek mod: akademik görünen alan adlarına izin ver, üniversiteyi boş bırak.
-    return { domain, university: null, isStudentAddress: isStudentSubdomain(domain) };
+  // Yalnızca .edu.tr: kullanıcı üniversitesini kendisi seçtiği için, yurt dışı
+  // akademik adreslerine (.edu, .ac.uk) izin vermek Türk üniversitesi seçmenin
+  // önünü açardı. KKTC okulları da .edu.tr kullanıyor, kapsam dışında kalmıyorlar.
+  if (
+    env.ALLOWED_DOMAIN_MODE === "edu" &&
+    looksLikeAcademicDomain(domain) &&
+    /\.edu\.tr$/.test(domain)
+  ) {
+    // Alan adı listede yok ama akademik. Engellemek yerine üniversiteyi
+    // kullanıcıya seçtiriyoruz — aksi halde listedeki her eksik alan adı
+    // o okulun tüm öğrencilerini sessizce dışarıda bırakıyor.
+    return {
+      domain,
+      university: null,
+      isStudentAddress: isStudentSubdomain(domain),
+      needsSelection: true,
+    };
   }
 
   throw badRequest(
@@ -61,6 +82,7 @@ export async function previewUniversityForEmail(email: string) {
       domain: resolved.domain,
       university: resolved.university,
       isStudentAddress: resolved.isStudentAddress,
+      needsUniversitySelection: resolved.needsSelection,
     };
   } catch (err) {
     return {

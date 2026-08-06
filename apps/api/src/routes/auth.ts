@@ -202,6 +202,21 @@ export default async function authRoutes(app: FastifyInstance) {
     const body = registerCompleteSchema.parse(request.body);
     const resolved = await resolveUniversityForEmail(body.email);
 
+    // Alan adı tanınmadıysa üniversiteyi kullanıcı seçer; istemciye
+    // güvenmeyip kaydın gerçekten var ve aktif olduğunu burada doğruluyoruz.
+    let universityId = resolved.university?.id ?? null;
+    if (resolved.needsSelection) {
+      if (!body.universityId) {
+        throw badRequest("Üniversiteni seçmelisin", { universityId: "Üniversite seçilmedi" });
+      }
+      const picked = await prisma.university.findFirst({
+        where: { id: body.universityId, isActive: true },
+        select: { id: true },
+      });
+      if (!picked) throw badRequest("Geçersiz üniversite seçimi", { universityId: "Bulunamadı" });
+      universityId = picked.id;
+    }
+
     const [emailTaken, usernameTaken] = await Promise.all([
       prisma.user.findUnique({ where: { email: body.email }, select: { id: true } }),
       prisma.user.findUnique({ where: { username: body.username }, select: { id: true } }),
@@ -220,7 +235,7 @@ export default async function authRoutes(app: FastifyInstance) {
         passwordHash,
         username: body.username,
         displayName: body.displayName,
-        universityId: resolved.university?.id ?? null,
+        universityId,
         department: body.department,
         classYear: body.classYear,
         isStudentAddress: resolved.isStudentAddress,
