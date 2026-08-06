@@ -7,7 +7,7 @@ bu proje için yeterli.
 |---|---|---|
 | Web (Next.js) | **Vercel** | Next.js'i en iyi çalıştıran yer |
 | API + Socket.IO | **Railway** | Sürekli açık süreç ve WebSocket gerekiyor |
-| PostgreSQL | **Neon** | Ücretsiz, yönetilen |
+| PostgreSQL | **Railway** | Aynı projede, bağlantı otomatik kuruluyor |
 | Dosyalar | **Cloudflare R2** | Sunucu diski her dağıtımda sıfırlanır |
 | E-posta | **Resend** | Doğrulama kodları gerçekten gitsin |
 
@@ -41,13 +41,35 @@ git push -u origin main
 
 ---
 
-## 1. Veritabanı — Neon
+## 1. Veritabanı — Railway PostgreSQL
+
+Veritabanını API ile aynı projeye koymak en pratiği: bağlantı adresini hiç
+kopyalamana gerek kalmaz, Railway iki servisi kendi ağı üzerinden birbirine
+bağlar.
+
+Bu adımı **4. bölümde**, Railway projesini oluştururken yapacaksın:
+
+> **New** → **Database** → **Add PostgreSQL**
+
+Railway `DATABASE_URL` değişkenini otomatik üretir; API servisinde buna
+`${{Postgres.DATABASE_URL}}` şeklinde referans verirsin (detay 4. bölümde).
+
+<details>
+<summary>Alternatif: Neon (harici, ücretsiz 0.5 GB)</summary>
+
+Veritabanını ayrı tutmak istersen:
 
 1. [neon.tech](https://neon.tech) → GitHub ile giriş → **New project**
 2. İsim `kampus`, bölge **Europe (Frankfurt)**
 3. **Connect** → **Connection pooling** seçeneğini **KAPAT** → adresi kopyala
 
-Bu adres birazdan Railway'e `DATABASE_URL` olarak girilecek. Kenara not et.
+Bu adresi Railway'de `DATABASE_URL` olarak elle girersin.
+
+Neon panelinde "Bir şeyler ters gitti" hatası alırsan tarayıcı eklentilerinden
+kaynaklanıyor olabilir — gizli sekmede (Ctrl+Shift+N) dene. Şifreyi görmek için
+"Şifreyi göster"e basman gerekmez; "Kod parçasını kopyala" zaten gerçek şifreyi
+kopyalar.
+</details>
 
 ---
 
@@ -87,14 +109,23 @@ gerçek kullanıcılar için alan adı doğrulaman gerekir.
 1. [railway.app](https://railway.app) → GitHub ile giriş
 2. **New Project** → **Deploy from GitHub repo** → depoyu seç
 3. Railway kökteki `railway.json` dosyasını görüp `apps/api/Dockerfile` ile derler
-4. **Variables** sekmesine `.env.production.example` içindeki **API bölümünü** gir
 
-Zorunlu olanlar:
+### 4a. Veritabanını ekle
+
+Aynı projede: **New** → **Database** → **Add PostgreSQL**.
+
+Birkaç saniyede hazır olur. Bağlantı adresini kopyalamana gerek yok — bir
+sonraki adımda referansla bağlayacağız.
+
+### 4b. Ortam değişkenleri
+
+API servisine tıkla → **Variables**. `.env.production.example` içindeki
+**API bölümünü** gir. Zorunlu olanlar:
 
 ```
 NODE_ENV=production
 PORT=4100
-DATABASE_URL=<Neon adresi>
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 JWT_ACCESS_SECRET=<üretilmiş değer>
 JWT_REFRESH_SECRET=<farklı üretilmiş değer>
 API_PUBLIC_URL=<Railway'in verdiği adres>
@@ -106,6 +137,10 @@ SMTP_USER=resend
 SMTP_PASS=<Resend anahtarı>
 MAIL_FROM=Kampus <noreply@ALAN_ADIN>
 ```
+
+> `${{Postgres.DATABASE_URL}}` bir yazım hatası değil — Railway'in referans
+> söz dizimi. Aynen böyle yaz; veritabanı servisinin adı farklıysa (örn.
+> `PostgreSQL`) onu kullan. Şifre değişse bile bağlantı bozulmaz.
 
 Gizli anahtarları üretmek için (her biri için ayrı ayrı çalıştır):
 
@@ -124,10 +159,14 @@ Migration tabloları oluşturur ama içlerini doldurmaz; 190 üniversiteyi bir k
 yüklemek gerekir. Bunu **kendi bilgisayarından** yap — sunucu imajında `tsx`
 bulunmuyor.
 
-Kendi terminalinde, `DATABASE_URL`'i tek seferlik Neon adresine yönlendirerek:
+Railway'de veritabanı servisine tıkla → **Variables** → `DATABASE_PUBLIC_URL`
+değerini kopyala (dışarıdan erişim için olan adres budur; `DATABASE_URL` yalnızca
+Railway'in iç ağında çalışır).
+
+Kendi terminalinde:
 
 ```bash
-$env:DATABASE_URL="<Neon adresi>"; npm run seed
+$env:DATABASE_URL="<DATABASE_PUBLIC_URL degeri>"; npm run seed
 ```
 
 Bu yalnızca o terminal oturumunu etkiler, `.env` dosyana dokunmaz — pencereyi
