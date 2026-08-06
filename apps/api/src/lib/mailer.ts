@@ -37,8 +37,47 @@ function layout(title: string, body: string): string {
 </body></html>`;
 }
 
+/** "Kampus <noreply@kampus.app>" -> { name, email } */
+function parseFrom(value: string): { name?: string; email: string } {
+  const match = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(value);
+  if (match) return { name: match[1] || undefined, email: match[2] };
+  return { email: value.trim() };
+}
+
+/**
+ * Brevo'nun HTTPS uç noktası. Barındırma sağlayıcıları giden SMTP portlarını
+ * sıklıkla kapattığı için, anahtar tanımlıysa tercih edilen yol budur.
+ */
+async function sendViaBrevoApi(to: string, subject: string, html: string, text: string) {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": env.BREVO_API_KEY,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: parseFrom(env.MAIL_FROM),
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Brevo API ${response.status}: ${await response.text()}`);
+  }
+}
+
 async function send(to: string, subject: string, html: string, text: string) {
   try {
+    if (env.BREVO_API_KEY) {
+      await sendViaBrevoApi(to, subject, html, text);
+      if (isDev) console.log(`📧 Mail gönderildi (Brevo API) -> ${to} (${subject})`);
+      return;
+    }
+
     const info = await transporter.sendMail({ from: env.MAIL_FROM, to, subject, html, text });
     if (isDev) {
       console.log(`📧 Mail gönderildi -> ${to} (${subject}) | messageId=${info.messageId}`);

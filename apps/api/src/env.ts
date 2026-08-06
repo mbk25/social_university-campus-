@@ -21,9 +21,21 @@ const schema = z.object({
   ACCESS_TOKEN_TTL: z.string().default("15m"),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
+  /**
+   * Brevo HTTP API anahtarı. Doluysa mailler SMTP yerine HTTPS üzerinden
+   * gönderilir — Railway gibi barındırma sağlayıcıları giden SMTP portlarını
+   * (25/465/587/2525) kapatıyor, 443 ise her yerde açık.
+   */
+  BREVO_API_KEY: z.string().default(""),
+
   SMTP_HOST: z.string().default("localhost"),
   SMTP_PORT: z.coerce.number().int().default(1025),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  // z.coerce.boolean() kullanılamaz: Boolean("false") === true olduğu için
+  // SMTP_SECURE="false" yazan herkes sessizce TLS'e zorlanırdı.
+  SMTP_SECURE: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
   SMTP_USER: z.string().default(""),
   SMTP_PASS: z.string().default(""),
   MAIL_FROM: z.string().default("Kampus <noreply@kampus.app>"),
