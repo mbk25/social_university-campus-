@@ -5,7 +5,7 @@
     "dockerfilePath": "apps/api/Dockerfile"
   },
   "deploy": {
-    "startCommand": "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/server.js",
+    "//startCommand": "Bilerek tanımlanmadı: Railway start komutunu kabuk üzerinden çalıştırmadığı için '&&' zinciri bozuluyordu. Dockerfile'daki CMD zaten sh -c ile aynı işi yapıyor.",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
