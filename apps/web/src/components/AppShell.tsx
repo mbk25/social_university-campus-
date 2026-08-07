@@ -262,6 +262,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        {user && (
+          <Link
+            href={`/u/${user.username}`}
+            className={cx(
+              "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] font-medium transition-colors",
+              pathname === `/u/${user.username}` ? "brand-text" : "text-faint",
+            )}
+            aria-label="Profil"
+          >
+            <Avatar src={user.avatarUrl} name={user.displayName} size="xs" />
+            Profil
+          </Link>
+        )}
         <button
           onClick={() => setComposeOpen(true)}
           className="mx-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg"
