@@ -60,6 +60,29 @@ export function timeAgo(input: string | number | Date, now: Date = new Date()): 
   return `${Math.floor(seconds / 31536000)} y`;
 }
 
+/**
+ * Sınıf seçenekleri. 7 ve sonrası sınıf numarası değil aşama bildirir, bu yüzden
+ * etiket tek yerden üretilir — aksi halde "7. sınıf" gibi yanlış metinler çıkıyor.
+ */
+export const CLASS_YEAR_OPTIONS: readonly { value: number; label: string }[] = [
+  { value: 1, label: "1. sınıf" },
+  { value: 2, label: "2. sınıf" },
+  { value: 3, label: "3. sınıf" },
+  { value: 4, label: "4. sınıf" },
+  { value: 5, label: "5. sınıf" },
+  { value: 6, label: "6. sınıf" },
+  { value: 7, label: "Yüksek lisans" },
+  { value: 8, label: "Doktora" },
+  { value: 9, label: "Mezun" },
+];
+
+export const CLASS_YEAR_MAX = 9;
+
+export function classYearLabel(year: number | null | undefined): string | null {
+  if (year == null) return null;
+  return CLASS_YEAR_OPTIONS.find((o) => o.value === year)?.label ?? null;
+}
+
 export function formatCount(n: number): string {
   if (n < 1000) return String(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0).replace(".0", "")}B`;

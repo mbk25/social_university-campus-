@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { classYearLabel } from "@kampus/shared";
 import { ApiError, api } from "@/lib/api";
 import type { Community, MiniUser } from "@/lib/types";
 import { Composer } from "@/components/Composer";
@@ -375,7 +376,7 @@ function MembersTab({ communityId, isStaff }: { communityId: string; isStaff: bo
                 <span className="block truncate text-[12.5px] text-faint">
                   @{member.username}
                   {member.department ? ` · ${member.department}` : ""}
-                  {member.classYear ? ` · ${member.classYear}. sınıf` : ""}
+                  {classYearLabel(member.classYear) ? ` · ${classYearLabel(member.classYear)}` : ""}
                 </span>
               </div>
               {isStaff && <span className="text-[12px] text-faint">{member.karma} karma</span>}

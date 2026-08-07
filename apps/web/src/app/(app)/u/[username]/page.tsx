@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { classYearLabel } from "@kampus/shared";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
@@ -257,7 +258,7 @@ export default function ProfilePage() {
                 <span className="flex items-center gap-1.5">
                   <MapPinIcon width={15} height={15} className="text-faint" />
                   {profile.department}
-                  {profile.classYear ? ` · ${profile.classYear}. sınıf` : ""}
+                  {classYearLabel(profile.classYear) ? ` · ${classYearLabel(profile.classYear)}` : ""}
                 </span>
               )}
             </div>

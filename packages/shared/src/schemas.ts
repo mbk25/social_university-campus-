@@ -42,7 +42,7 @@ export const registerCompleteSchema = z.object({
   displayName: z.string().trim().min(2, "İsim en az 2 karakter").max(50),
   password: passwordSchema,
   department: z.string().trim().min(2).max(80),
-  classYear: z.number().int().min(1).max(8),
+  classYear: z.number().int().min(1).max(9),
   acceptedTerms: z.literal(true, {
     errorMap: () => ({ message: "Kullanım koşullarını kabul etmelisiniz" }),
   }),
@@ -77,7 +77,7 @@ export const updateProfileSchema = z.object({
   displayName: z.string().trim().min(2).max(50).optional(),
   bio: z.string().trim().max(280).optional(),
   department: z.string().trim().min(2).max(80).optional(),
-  classYear: z.number().int().min(1).max(8).optional(),
+  classYear: z.number().int().min(1).max(9).optional(),
   avatarUrl: z.string().url().nullable().optional(),
   coverUrl: z.string().url().nullable().optional(),
   interests: z.array(z.string().trim().min(1).max(30)).max(10).optional(),

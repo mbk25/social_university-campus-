@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
+import { classYearLabel } from "@kampus/shared";
 import { ApiError, api } from "../../src/lib/api";
 import { useAuth } from "../../src/lib/auth";
 import { formatCount, palette, radius, spacing } from "../../src/lib/theme";
@@ -132,7 +133,7 @@ export default function UserProfileScreen() {
             {[
               profile.university?.name,
               profile.department,
-              profile.classYear ? `${profile.classYear}. sınıf` : null,
+              classYearLabel(profile.classYear),
             ]
               .filter(Boolean)
               .join(" · ")}

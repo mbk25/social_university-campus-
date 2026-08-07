@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { classYearLabel } from "@kampus/shared";
 import { api, uploadImageAsset } from "../../src/lib/api";
 import { useAuth } from "../../src/lib/auth";
 import { formatCount, palette, radius, spacing, typography } from "../../src/lib/theme";
@@ -93,7 +94,7 @@ export default function ProfileScreen() {
           {user.department && (
             <InfoRow
               icon="book-outline"
-              text={`${user.department}${user.classYear ? ` · ${user.classYear}. sınıf` : ""}`}
+              text={`${user.department}${classYearLabel(user.classYear) ? ` · ${classYearLabel(user.classYear)}` : ""}`}
             />
           )}
           {email && <InfoRow icon="mail-outline" text={email} />}

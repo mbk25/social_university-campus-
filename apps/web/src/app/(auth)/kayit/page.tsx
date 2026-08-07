@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CLASS_YEAR_OPTIONS } from "@kampus/shared";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
@@ -500,13 +501,11 @@ export default function RegisterPage() {
                 value={classYear}
                 onChange={(e) => setClassYear(Number(e.target.value))}
               >
-                {[1, 2, 3, 4, 5, 6].map((y) => (
-                  <option key={y} value={y}>
-                    {y}. sınıf
+                {CLASS_YEAR_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
-                <option value={7}>Yüksek lisans</option>
-                <option value={8}>Doktora</option>
               </Select>
 
               <div>

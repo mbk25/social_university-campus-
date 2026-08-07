@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { CLASS_YEAR_OPTIONS } from "@kampus/shared";
 import { ApiError, api, uploadImage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { MiniUser, User } from "@/lib/types";
@@ -197,13 +198,11 @@ function ProfileSettings({ user, onSaved }: { user: User; onSaved: (u: User) => 
         </Select>
 
         <Select label="Sınıf" value={classYear} onChange={(e) => setClassYear(Number(e.target.value))}>
-          {[1, 2, 3, 4, 5, 6].map((y) => (
-            <option key={y} value={y}>
-              {y}. sınıf
+          {CLASS_YEAR_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
-          <option value={7}>Yüksek lisans</option>
-          <option value={8}>Doktora</option>
         </Select>
       </div>
 
