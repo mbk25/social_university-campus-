@@ -227,7 +227,8 @@ export default function RegisterPage() {
       applyAuthResponse(result);
       await refreshUser();
       toast.show("Hesabın hazır! Kampüse hoş geldin 🎓", "success");
-      router.replace("/akis");
+      // Yeni kullanıcı boş akışa düşmesin — önce takip/topluluk önerileri.
+      router.replace("/hosgeldin");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

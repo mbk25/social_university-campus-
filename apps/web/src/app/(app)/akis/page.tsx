@@ -79,8 +79,10 @@ export default function HomePage() {
         }
         emptyAction={
           tab === "HOME" ? (
-            <Link href="/topluluklar">
-              <Button>Toplulukları keşfet</Button>
+            // Boş akış, hesabı yeni açılmış birinin ilk gördüğü şey olabiliyor —
+            // onu kişi ve topluluk önerilerine yolla, çıplak listeye değil.
+            <Link href="/hosgeldin">
+              <Button>Kimleri takip edeceğini gör</Button>
             </Link>
           ) : undefined
         }
