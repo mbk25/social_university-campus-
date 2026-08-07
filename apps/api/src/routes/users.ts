@@ -1,3 +1,4 @@
+import argon2 from "argon2";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { updateProfileSchema } from "@kampus/shared";
@@ -344,6 +345,36 @@ export default async function userRoutes(app: FastifyInstance) {
       data: { revokedAt: new Date() },
     });
     return { ok: true, message: "Hesabınız kapatıldı. Tekrar giriş yaparsanız yeniden açılır." };
+  });
+
+  // --------------------------------------------------- hesabı kalıcı olarak sil
+  // Kapatma geri alınabilir; bu geri alınamaz. Google Play ve KVKK/GDPR
+  // hesap açtıran uygulamalarda gerçek silme imkânı şart koşuyor.
+  app.delete("/me", { preHandler: app.authenticate }, async (request) => {
+    const viewer = requireUser(request);
+    const { password } = z
+      .object({ password: z.string().min(1, "Şifreni gir") })
+      .parse(request.body);
+
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: viewer.id },
+      select: { passwordHash: true },
+    });
+
+    // Kalıcı ve geri alınamaz bir işlem: kimliği şifreyle bir kez daha doğrula.
+    let valid = false;
+    try {
+      valid = await argon2.verify(user.passwordHash, password);
+    } catch {
+      valid = false;
+    }
+    if (!valid) throw badRequest("Şifren hatalı", { password: "Hatalı şifre" });
+
+    // Şemadaki tüm kullanıcı ilişkileri onDelete: Cascade; gönderiler, yorumlar,
+    // mesajlar ve oturumlar bu silmeyle birlikte gider.
+    await prisma.user.delete({ where: { id: viewer.id } });
+
+    return { ok: true, message: "Hesabın ve tüm içeriğin kalıcı olarak silindi." };
   });
 
   // ------------------------------------------------------------ push jetonu (mobil)

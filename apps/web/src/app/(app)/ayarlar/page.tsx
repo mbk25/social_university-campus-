@@ -386,6 +386,10 @@ function AccountSettings({
   onLogout: () => Promise<void>;
   toast: { show: (m: string, t?: "success" | "error" | "info") => void };
 }) {
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   return (
     <div className="space-y-3">
       <section className="surface space-y-3 rounded-[var(--radius-card)] p-5">
@@ -412,6 +416,46 @@ function AccountSettings({
           }}
         >
           Hesabımı kapat
+        </Button>
+      </section>
+
+      <section className="surface space-y-3 rounded-[var(--radius-card)] border border-rose-500/30 p-5">
+        <h2 className="text-[15px] font-bold text-rose-500">Hesabı kalıcı olarak sil</h2>
+        <p className="text-[14px] leading-relaxed text-muted">
+          Hesabın, gönderilerin, yorumların ve mesajların kalıcı olarak silinir.{" "}
+          <strong className="text-[var(--text)]">Bu işlem geri alınamaz</strong> — kapatmanın aksine
+          tekrar giriş yaparak geri getiremezsin.
+        </p>
+        <Input
+          type="password"
+          label="Şifreni gir"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+          error={deleteError ?? undefined}
+          autoComplete="current-password"
+        />
+        <Button
+          variant="danger"
+          loading={deleting}
+          disabled={!deletePassword}
+          onClick={async () => {
+            if (!confirm("Hesabın ve tüm içeriğin kalıcı olarak silinecek. Emin misin?")) return;
+            setDeleting(true);
+            setDeleteError(null);
+            try {
+              await api.delete("/users/me", { body: { password: deletePassword } });
+              toast.show("Hesabın kalıcı olarak silindi", "info");
+              await onLogout();
+            } catch (err) {
+              setDeleteError(
+                err instanceof ApiError ? err.message : "Hesap silinemedi, tekrar dene",
+              );
+            } finally {
+              setDeleting(false);
+            }
+          }}
+        >
+          Hesabımı kalıcı olarak sil
         </Button>
       </section>
 

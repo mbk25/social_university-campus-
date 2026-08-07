@@ -30,7 +30,11 @@ export default function CommunityPage() {
   const [tab, setTab] = useState<Tab>("POSTS");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Sunucuda window yok; ilk render'da boş bırakıp istemcide dolduruyoruz.
+  const [origin, setOrigin] = useState("");
   const feedRef = useRef<FeedHandle | null>(null);
+
+  useEffect(() => setOrigin(window.location.origin), []);
 
   const onFeedReady = useCallback((handle: FeedHandle) => {
     feedRef.current = handle;
@@ -204,14 +208,27 @@ export default function CommunityPage() {
             </div>
 
             <div className="mt-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={shareCommunity}
-                icon={<ShareIcon width={15} height={15} />}
-              >
-                {copied ? "Bağlantı kopyalandı" : "Paylaş"}
-              </Button>
+              <span className="mb-1.5 block text-[12.5px] font-medium text-faint">
+                Davet bağlantısı — arkadaşlarına gönder
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={origin ? `${origin}/topluluk/${community.slug}` : ""}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onClick={shareCommunity}
+                  aria-label="Topluluk bağlantısı"
+                  className="min-w-0 flex-1 cursor-pointer rounded-xl surface-subtle px-3 py-2 text-[13px] text-muted outline-none"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={shareCommunity}
+                  icon={<ShareIcon width={15} height={15} />}
+                >
+                  {copied ? "Kopyalandı" : "Kopyala"}
+                </Button>
+              </div>
             </div>
 
             {community.tags.length > 0 && (

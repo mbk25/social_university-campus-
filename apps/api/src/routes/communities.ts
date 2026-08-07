@@ -480,6 +480,17 @@ export default async function communityRoutes(app: FastifyInstance) {
     });
     if (!joinRequest) throw notFound("İstek bulunamadı");
 
+    if (action === "APPROVE") {
+      // Kural isteği oluştururken kontrol edilmişti ama kullanıcı o zamandan beri
+      // bölümünü ya da üniversitesini değiştirmiş olabilir. Onay anında yeniden bak.
+      const applicant = await prisma.user.findUnique({
+        where: { id: joinRequest.userId },
+        select: { id: true, universityId: true, department: true, role: true },
+      });
+      if (!applicant) throw notFound("Kullanıcı bulunamadı");
+      await assertCanJoin(community, applicant);
+    }
+
     await prisma.communityJoinRequest.update({
       where: { id: requestId },
       data: { status: action === "APPROVE" ? "APPROVED" : "REJECTED", resolvedAt: new Date() },
