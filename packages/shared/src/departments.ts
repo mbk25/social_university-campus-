@@ -120,6 +120,7 @@ export const DEPARTMENTS: DepartmentGroup[] = [
     faculty: "Diğer",
     departments: [
       "Bilgisayar Programcılığı",
+      "Web Tasarımı ve Kodlama",
       "Bankacılık ve Sigortacılık",
       "Turizm ve Otel İşletmeciliği",
       "Gastronomi ve Mutfak Sanatları",
