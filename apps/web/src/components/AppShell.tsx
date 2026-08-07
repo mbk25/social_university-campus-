@@ -6,20 +6,24 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { getSocket } from "@/lib/socket";
-import type { Notification } from "@/lib/types";
+import type { Notification, User } from "@/lib/types";
 import {
   BellIcon,
   BookIcon,
   CalendarIcon,
   ChatIcon,
+  ChevronRightIcon,
+  CloseIcon,
   CompassIcon,
   HomeIcon,
   LogoutIcon,
   MaskIcon,
+  MenuIcon,
   MoonIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   SunIcon,
   UsersIcon,
 } from "./icons";
@@ -29,21 +33,34 @@ import { Composer } from "./Composer";
 interface NavItem {
   href: string;
   label: string;
+  /** Alt menüdeki dar sekmelerde kullanılan kısa ad */
+  shortLabel?: string;
   icon: (p: { width?: number; height?: number; filled?: boolean }) => React.ReactNode;
   badge?: "notifications" | "messages";
-  mobile?: boolean;
+  /** Mobil alt çubukta kendi sekmesi var; kalanlar mobilde menü çekmecesinde */
+  tab?: boolean;
 }
 
 const NAV: NavItem[] = [
-  { href: "/akis", label: "Ana Sayfa", icon: HomeIcon, mobile: true },
-  { href: "/kesfet", label: "Keşfet", icon: CompassIcon, mobile: true },
-  { href: "/topluluklar", label: "Topluluklar", icon: UsersIcon, mobile: true },
-  { href: "/mesajlar", label: "Mesajlar", icon: ChatIcon, badge: "messages", mobile: true },
+  { href: "/akis", label: "Ana Sayfa", shortLabel: "Akış", icon: HomeIcon, tab: true },
+  { href: "/kesfet", label: "Keşfet", icon: CompassIcon, tab: true },
+  { href: "/topluluklar", label: "Topluluklar", shortLabel: "Topluluk", icon: UsersIcon, tab: true },
+  {
+    href: "/mesajlar",
+    label: "Mesajlar",
+    shortLabel: "Mesaj",
+    icon: ChatIcon,
+    badge: "messages",
+    tab: true,
+  },
   { href: "/bildirimler", label: "Bildirimler", icon: BellIcon, badge: "notifications" },
   { href: "/etkinlikler", label: "Etkinlikler", icon: CalendarIcon },
   { href: "/notlar", label: "Ders Notları", icon: BookIcon },
   { href: "/itiraflar", label: "İtiraflar", icon: MaskIcon },
 ];
+
+const isActive = (pathname: string, href: string) =>
+  pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -52,10 +69,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
+
+  // Sayfa değişince mobil menü kapansın
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const toggleTheme = useCallback(() => {
     const next = !document.documentElement.classList.contains("dark");
@@ -123,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <nav className="flex-1 space-y-0.5">
           {NAV.map((item) => {
-            const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const active = isActive(pathname, item.href);
             const Icon = item.icon;
             const badge = badgeFor(item);
             return (
@@ -199,31 +222,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ------------------------------------------------------- İçerik alanı */}
-      <div className="min-w-0 flex-1 pb-20 lg:pb-8">
+      <div className="min-w-0 flex-1 pb-[calc(env(safe-area-inset-bottom)+72px)] lg:pb-8">
         {/* Mobil üst çubuk */}
-        <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 lg:hidden">
-          <Link href="/akis" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#8f74ff] to-[#5836c9] text-base font-black text-white">
+        <header className="glass sticky top-0 z-30 flex items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 lg:hidden">
+          <Link href="/akis" aria-label="Kampus" className="shrink-0">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#8f74ff] to-[#5836c9] text-base font-black text-white">
               K
             </span>
-            <span className="text-[17px] font-black tracking-tight">Kampus</span>
           </Link>
-          <div className="flex items-center gap-1">
-            <IconAction onClick={() => setSearchOpen(true)} label="Ara">
-              <SearchIcon width={20} height={20} />
-            </IconAction>
-            <IconAction onClick={toggleTheme} label="Tema">
-              {dark ? <SunIcon width={20} height={20} /> : <MoonIcon width={20} height={20} />}
-            </IconAction>
-            <Link href="/bildirimler" className="relative">
-              <IconAction label="Bildirimler">
-                <BellIcon width={20} height={20} />
-              </IconAction>
-              {unreadNotifications > 0 && (
-                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500" />
-              )}
-            </Link>
-          </div>
+
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-subtle)] px-3.5 text-left text-[13.5px] text-faint"
+          >
+            <SearchIcon width={16} height={16} className="shrink-0" />
+            <span className="truncate">Kişi, topluluk, gönderi ara</span>
+          </button>
+
+          <Link
+            href="/bildirimler"
+            aria-label="Bildirimler"
+            className={cx(
+              "relative shrink-0 rounded-lg p-2 transition-colors",
+              isActive(pathname, "/bildirimler") ? "brand-text" : "text-muted",
+            )}
+          >
+            <BellIcon width={21} height={21} filled={isActive(pathname, "/bildirimler")} />
+            {unreadNotifications > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9.5px] font-bold text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            )}
+          </Link>
         </header>
 
         <main className="px-3 py-4 sm:px-0">{children}</main>
@@ -235,10 +265,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <RightRail />
       </aside>
 
-      {/* ------------------------------------------------------- Mobil menü */}
-      <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-[var(--border)] px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 lg:hidden">
-        {NAV.filter((i) => i.mobile).map((item) => {
-          const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+      {/* --------------------------------------------- Mobil paylaş düğmesi */}
+      <button
+        onClick={() => setComposeOpen(true)}
+        aria-label="Paylaş"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+74px)] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-[0_10px_28px_-8px_var(--brand)] active:scale-95 lg:hidden"
+      >
+        <PlusIcon width={24} height={24} />
+      </button>
+
+      {/* ------------------------------------------------- Mobil alt çubuk */}
+      <nav className="glass fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[var(--border)] pb-[env(safe-area-inset-bottom)] lg:hidden">
+        {NAV.filter((i) => i.tab).map((item) => {
+          const active = isActive(pathname, item.href);
           const Icon = item.icon;
           const badge = badgeFor(item);
           return (
@@ -246,7 +285,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={cx(
-                "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] font-medium transition-colors",
+                "relative flex min-w-0 flex-col items-center gap-1 px-0.5 pb-1.5 pt-2 text-[10px] font-semibold transition-colors",
                 active ? "brand-text" : "text-faint",
               )}
             >
@@ -258,31 +297,49 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
               </span>
-              {item.label}
+              <span className="max-w-full truncate">{item.shortLabel ?? item.label}</span>
+              {active && (
+                <span className="absolute inset-x-[30%] top-0 h-0.5 rounded-full bg-[var(--brand)]" />
+              )}
             </Link>
           );
         })}
-        {user && (
-          <Link
-            href={`/u/${user.username}`}
-            className={cx(
-              "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10.5px] font-medium transition-colors",
-              pathname === `/u/${user.username}` ? "brand-text" : "text-faint",
-            )}
-            aria-label="Profil"
-          >
-            <Avatar src={user.avatarUrl} name={user.displayName} size="xs" />
-            Profil
-          </Link>
-        )}
+
         <button
-          onClick={() => setComposeOpen(true)}
-          className="mx-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-white shadow-lg"
-          aria-label="Paylaş"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Menü"
+          aria-expanded={menuOpen}
+          className={cx(
+            "relative flex min-w-0 flex-col items-center gap-1 px-0.5 pb-1.5 pt-2 text-[10px] font-semibold transition-colors",
+            menuOpen ? "brand-text" : "text-faint",
+          )}
         >
-          <PlusIcon width={22} height={22} />
+          <span className="relative flex h-[23px] items-center">
+            {user ? (
+              <Avatar src={user.avatarUrl} name={user.displayName} size="xs" />
+            ) : (
+              <MenuIcon width={23} height={23} />
+            )}
+            {unreadNotifications > 0 && (
+              <span className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-elevated)] bg-rose-500" />
+            )}
+          </span>
+          <span className="max-w-full truncate">Menü</span>
         </button>
       </nav>
+
+      {/* --------------------------------------------------- Mobil çekmece */}
+      {menuOpen && (
+        <MobileMenu
+          onClose={() => setMenuOpen(false)}
+          dark={dark}
+          onToggleTheme={toggleTheme}
+          badgeFor={badgeFor}
+          pathname={pathname}
+          user={user}
+          onLogout={() => void logout()}
+        />
+      )}
 
       <Modal open={composeOpen} onClose={() => setComposeOpen(false)} title="Yeni gönderi">
         <Composer autoFocus onPosted={() => setComposeOpen(false)} />
@@ -291,6 +348,164 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Modal open={searchOpen} onClose={() => setSearchOpen(false)} title="Ara">
         <SearchBar autoFocus onNavigate={() => setSearchOpen(false)} />
       </Modal>
+    </div>
+  );
+}
+
+/**
+ * Mobilde sağdan açılan menü. Masaüstü sol menüsünde olup alt çubuğa
+ * sığmayan her şey (bildirimler, etkinlikler, notlar, itiraflar, profil,
+ * ayarlar, tema, çıkış) buradan erişilebilir.
+ */
+function MobileMenu({
+  onClose,
+  dark,
+  onToggleTheme,
+  badgeFor,
+  pathname,
+  user,
+  onLogout,
+}: {
+  onClose: () => void;
+  dark: boolean;
+  onToggleTheme: () => void;
+  badgeFor: (item: NavItem) => number;
+  pathname: string;
+  user: User | null;
+  onLogout: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} aria-hidden />
+
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menü"
+        className="animate-slide-in-right absolute inset-y-0 right-0 flex w-[86%] max-w-[340px] flex-col border-l border-[var(--border)] bg-[var(--bg-elevated)] shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <span className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#8f74ff] to-[#5836c9] text-base font-black text-white">
+              K
+            </span>
+            <span className="text-[17px] font-black tracking-tight">Kampus</span>
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Kapat"
+            className="rounded-lg p-2 text-muted transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text)]"
+          >
+            <CloseIcon width={18} height={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+16px)]">
+          {user && (
+            <Link
+              href={`/u/${user.username}`}
+              className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-4 transition-colors hover:bg-[var(--bg-subtle)]"
+            >
+              <Avatar src={user.avatarUrl} name={user.displayName} size="md" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-[15px] font-bold">{user.displayName}</span>
+                  {user.isVerifiedStudent && (
+                    <ShieldCheckIcon width={14} height={14} className="shrink-0 brand-text" />
+                  )}
+                </span>
+                <span className="block truncate text-[12.5px] text-faint">
+                  @{user.username}
+                  {user.university ? ` · ${user.university.shortName}` : ""}
+                </span>
+              </span>
+              <ChevronRightIcon width={18} height={18} className="shrink-0 text-faint" />
+            </Link>
+          )}
+
+          <nav className="p-2">
+            {NAV.filter((item) => !item.tab).map((item) => {
+              const active = isActive(pathname, item.href);
+              const Icon = item.icon;
+              const badge = badgeFor(item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={cx(
+                    "flex items-center gap-3.5 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors",
+                    active ? "brand-soft-bg brand-text font-semibold" : "hover:bg-[var(--bg-subtle)]",
+                  )}
+                >
+                  <Icon width={21} height={21} filled={active} />
+                  <span className="flex-1">{item.label}</span>
+                  {badge > 0 && (
+                    <span className="flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10.5px] font-bold text-white">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mx-4 border-t border-[var(--border)]" />
+
+          <div className="p-2">
+            <Link
+              href="/ayarlar"
+              onClick={onClose}
+              className={cx(
+                "flex items-center gap-3.5 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors",
+                isActive(pathname, "/ayarlar")
+                  ? "brand-soft-bg brand-text font-semibold"
+                  : "hover:bg-[var(--bg-subtle)]",
+              )}
+            >
+              <SettingsIcon width={21} height={21} />
+              Ayarlar
+            </Link>
+
+            <button
+              onClick={onToggleTheme}
+              className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors hover:bg-[var(--bg-subtle)]"
+            >
+              {dark ? <SunIcon width={21} height={21} /> : <MoonIcon width={21} height={21} />}
+              <span className="flex-1 text-left">{dark ? "Açık tema" : "Koyu tema"}</span>
+            </button>
+
+            <button
+              onClick={onLogout}
+              className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3 text-[15px] font-medium text-rose-500 transition-colors hover:bg-rose-500/10"
+            >
+              <LogoutIcon width={21} height={21} />
+              Çıkış yap
+            </button>
+          </div>
+
+          <p className="px-5 pt-2 text-[12px] leading-relaxed text-faint">
+            <Link href="/kurallar" onClick={onClose} className="hover:underline">
+              Topluluk kuralları
+            </Link>
+            {" · "}
+            <Link href="/gizlilik" onClick={onClose} className="hover:underline">
+              Gizlilik
+            </Link>
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }
