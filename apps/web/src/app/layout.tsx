@@ -4,6 +4,9 @@ import { ToastProvider } from "@/components/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Bu olmadan Next.js og:image adresini Vercel'in dağıtım adresinden üretir;
+  // link paylaşıldığında önizleme başka bir alan adından gelir.
+  metadataBase: new URL("https://kampusum.me"),
   title: {
     default: "Kampus — Üniversite öğrencilerinin sosyal ağı",
     template: "%s · Kampus",

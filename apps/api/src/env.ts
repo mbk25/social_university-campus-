@@ -38,7 +38,7 @@ const schema = z.object({
     .transform((v) => v === "true" || v === "1"),
   SMTP_USER: z.string().default(""),
   SMTP_PASS: z.string().default(""),
-  MAIL_FROM: z.string().default("Kampus <noreply@kampus.app>"),
+  MAIL_FROM: z.string().default("Kampus <noreply@kampusum.me>"),
 
   ALLOWED_DOMAIN_MODE: z.enum(["strict", "edu"]).default("strict"),
 
