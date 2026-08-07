@@ -116,7 +116,7 @@ export default function PostDetailPage() {
       <EmptyState
         title="Gönderi bulunamadı"
         description={error ?? "Bu gönderi silinmiş veya erişiminiz yok olabilir."}
-        action={<Button onClick={() => router.push("/")}>Ana sayfaya dön</Button>}
+        action={<Button onClick={() => router.push("/akis")}>Ana sayfaya dön</Button>}
       />
     );
   }
@@ -130,7 +130,7 @@ export default function PostDetailPage() {
         <ArrowLeftIcon width={18} height={18} /> Geri
       </button>
 
-      <PostCard post={post} onDeleted={() => router.push("/")} />
+      <PostCard post={post} onDeleted={() => router.push("/akis")} />
 
       {/* -------------------------------------------------------- Yorum kutusu */}
       <div className="surface rounded-[var(--radius-card)] p-4">

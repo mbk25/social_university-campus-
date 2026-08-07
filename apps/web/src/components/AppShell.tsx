@@ -35,7 +35,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Ana Sayfa", icon: HomeIcon, mobile: true },
+  { href: "/akis", label: "Ana Sayfa", icon: HomeIcon, mobile: true },
   { href: "/kesfet", label: "Keşfet", icon: CompassIcon, mobile: true },
   { href: "/topluluklar", label: "Topluluklar", icon: UsersIcon, mobile: true },
   { href: "/mesajlar", label: "Mesajlar", icon: ChatIcon, badge: "messages", mobile: true },
@@ -114,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="mx-auto flex min-h-screen w-full max-w-[1280px] gap-6 px-0 sm:px-4">
       {/* ---------------------------------------------------------- Sol menü */}
       <aside className="sticky top-0 hidden h-screen w-[76px] shrink-0 flex-col py-4 lg:flex xl:w-[248px]">
-        <Link href="/" className="mb-5 flex items-center gap-2.5 px-3">
+        <Link href="/akis" className="mb-5 flex items-center gap-2.5 px-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#8f74ff] to-[#5836c9] text-lg font-black text-white">
             K
           </span>
@@ -202,7 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0 flex-1 pb-20 lg:pb-8">
         {/* Mobil üst çubuk */}
         <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 lg:hidden">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/akis" className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#8f74ff] to-[#5836c9] text-base font-black text-white">
               K
             </span>

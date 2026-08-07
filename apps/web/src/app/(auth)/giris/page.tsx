@@ -20,7 +20,7 @@ function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
 
-  const next = params.get("next") ?? "/";
+  const next = params.get("next") ?? "/akis";
 
   useEffect(() => {
     if (!loading && user) router.replace(next);

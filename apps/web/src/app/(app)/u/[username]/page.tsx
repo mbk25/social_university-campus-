@@ -136,7 +136,7 @@ export default function ProfilePage() {
       <EmptyState
         title="Profil bulunamadı"
         description={error ?? undefined}
-        action={<Button onClick={() => router.push("/")}>Ana sayfaya dön</Button>}
+        action={<Button onClick={() => router.push("/akis")}>Ana sayfaya dön</Button>}
       />
     );
   }
