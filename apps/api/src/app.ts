@@ -7,6 +7,7 @@ import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance } from "fastify";
 import { corsOrigins, env, isDev } from "./env";
 import { registerErrorHandler } from "./lib/errors";
+import { getFile, usesObjectStorage } from "./lib/storage";
 import authPlugin from "./plugins/auth";
 
 import authRoutes from "./routes/auth";
@@ -80,6 +81,36 @@ export async function buildApp(): Promise<FastifyInstance> {
     cacheControl: true,
     maxAge: "7d",
   });
+
+  // Nesne depolamadaki dosyaları sunucu üzerinden servis eder.
+  //
+  // Cloudflare R2'nin `r2.dev` alan adı Türkiye'deki ağlarda engellendiği için
+  // tarayıcı dosyalara doğrudan ulaşamıyor — sunucu ulaşabiliyor. Bu rota
+  // aradaki köprü. Bucket'a özel alan adı bağlandığında `S3_PUBLIC_URL` o
+  // adrese çevrilir ve burası kendiliğinden devre dışı kalır.
+  if (usesObjectStorage) {
+    app.get<{ Params: { "*": string } }>("/media/*", {
+      // Görseller hız sınırının dışında: kampüs ağlarında yüzlerce öğrenci tek
+      // bir genel IP'nin arkasında olur ve ortak kotayı dakikada tüketirlerdi.
+      // İçerik değişmez ve kalıcı önbelleklendiği için kötüye kullanım riski düşük.
+      config: { rateLimit: false },
+    }, async (request, reply) => {
+      const key = request.params["*"];
+      if (!key || key.includes("..")) return reply.code(400).send({ error: "Geçersiz yol" });
+
+      const file = await getFile(key);
+      if (!file) return reply.code(404).send({ error: "Dosya bulunamadı" });
+
+      // Dosya adları benzersiz (nanoid), bu yüzden kalıcı önbellek güvenli.
+      reply
+        .header("content-type", file.contentType ?? "application/octet-stream")
+        .header("cache-control", file.cacheControl ?? "public, max-age=31536000, immutable");
+      if (file.contentLength !== undefined) reply.header("content-length", file.contentLength);
+      if (file.etag) reply.header("etag", file.etag);
+
+      return reply.send(file.body);
+    });
+  }
 
   await app.register(authPlugin);
   registerErrorHandler(app);

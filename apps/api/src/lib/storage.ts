@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { Readable } from "node:stream";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { env } from "../env";
 
 /**
@@ -63,6 +64,46 @@ export async function saveFile(input: SaveFileInput): Promise<{ url: string; key
   await fs.writeFile(path.join(dir, input.filename), input.body);
 
   return { url: `${env.API_PUBLIC_URL}/uploads/${key}`, key };
+}
+
+export interface StoredFile {
+  body: Readable;
+  contentType?: string;
+  contentLength?: number;
+  cacheControl?: string;
+  etag?: string;
+}
+
+/**
+ * Nesne depolamadan bir dosyayı okur.
+ *
+ * Neden gerek duyuluyor: R2'nin `r2.dev` alan adı Türkiye'deki ağlarda
+ * engelleniyor, dolayısıyla tarayıcı dosyaya doğrudan ulaşamıyor. Sunucu
+ * ulaşabildiği için dosyayı buradan okuyup kendimiz servis ediyoruz
+ * (bkz. app.ts içindeki /media/* rotası). Bucket'a özel bir alan adı
+ * bağlandığında bu yola gerek kalmayacak.
+ *
+ * Dosya yoksa null döner.
+ */
+export async function getFile(key: string): Promise<StoredFile | null> {
+  if (!usesObjectStorage) return null;
+
+  try {
+    const out = await s3().send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+    if (!out.Body) return null;
+
+    return {
+      body: out.Body as Readable,
+      contentType: out.ContentType,
+      contentLength: out.ContentLength,
+      cacheControl: out.CacheControl,
+      etag: out.ETag,
+    };
+  } catch (err) {
+    const ad = (err as { name?: string }).name;
+    if (ad === "NoSuchKey" || ad === "NotFound") return null;
+    throw err;
+  }
 }
 
 /** Sunucu açılışında yapılandırmanın tutarlı olduğunu kontrol eder. */
