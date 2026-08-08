@@ -70,6 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [composeOpen, setComposeOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const isMessagesPage = pathname.startsWith("/mesajlar");
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -275,10 +276,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* --------------------------------------------------------- Sağ sütun */}
-      <aside className="sticky top-0 hidden h-screen w-[320px] shrink-0 flex-col gap-4 overflow-y-auto py-4 no-scrollbar xl:flex">
-        <SearchBar />
-        <RightRail />
-      </aside>
+      {!isMessagesPage && (
+        <aside className="sticky top-0 hidden h-screen w-[320px] shrink-0 flex-col gap-4 overflow-y-auto py-4 no-scrollbar xl:flex">
+          <SearchBar />
+          <RightRail />
+        </aside>
+      )}
 
       {/* --------------------------------------------- Mobil paylaş düğmesi */}
       <button
