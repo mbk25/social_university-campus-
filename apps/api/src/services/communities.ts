@@ -40,7 +40,7 @@ export async function assertCanView(
 
   if (!user) throw forbidden("Bu topluluğu görüntülemek için giriş yapmalısınız");
 
-  if (community.universityId && community.universityId !== user.universityId) {
+  if (community.universityId && !(await hasEducationAccess(user, community.universityId, community.department))) {
     throw forbidden("Bu topluluk yalnızca kendi üniversitesinin öğrencilerine açık");
   }
 }
@@ -58,16 +58,29 @@ export async function assertCanJoin(
   if (user.role === "ADMIN") return;
 
   if (community.scope === "UNIVERSITY" || community.scope === "DEPARTMENT") {
-    if (community.universityId !== user.universityId) {
+    if (!community.universityId || !(await hasEducationAccess(user, community.universityId, community.department))) {
       throw forbidden("Bu topluluğa yalnızca kendi üniversitesinin öğrencileri katılabilir");
     }
   }
 
-  if (community.scope === "DEPARTMENT" && community.department !== user.department) {
+  if (community.scope === "DEPARTMENT" && community.department !== user.department && !(await hasEducationAccess(user, community.universityId!, community.department))) {
     throw forbidden(
       `Bu topluluk "${community.department}" bölümü öğrencilerine özel. Bölümünü profilinden güncelleyebilirsin.`,
     );
   }
+}
+
+/** Ana eğitim veya doğrulanmış ek eğitim topluluk kapsamıyla eşleşiyor mu? */
+async function hasEducationAccess(
+  user: { id: string; universityId: string | null; department: string | null },
+  universityId: string,
+  department: string | null,
+) {
+  if (user.universityId === universityId && (!department || user.department === department)) return true;
+  return !!(await prisma.userEducation.findFirst({
+    where: { userId: user.id, universityId, ...(department ? { department } : {}) },
+    select: { id: true },
+  }));
 }
 
 export async function joinCommunity(communityId: string, userId: string) {
@@ -137,8 +150,8 @@ export async function leaveCommunity(communityId: string, userId: string) {
  * Yeni kullanıcıyı üniversitesinin genel topluluğuna ve bölüm topluluğuna ekler.
  * Topluluklar yoksa otomatik oluşturulur — böylece platform ilk günden dolu görünür.
  */
-export async function autoJoinDefaultCommunities(userId: string) {
-  const user = await prisma.user.findUnique({
+export async function autoJoinDefaultCommunities(userId: string, universityId?: string, department?: string) {
+  const existingUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -147,9 +160,12 @@ export async function autoJoinDefaultCommunities(userId: string) {
       university: { select: { id: true, name: true, shortName: true } },
     },
   });
-  if (!user?.university) return;
-
-  const uni = user.university;
+  const user = existingUser ?? { university: null, department: null };
+  const uni = universityId
+    ? await prisma.university.findUnique({ where: { id: universityId }, select: { id: true, name: true, shortName: true } })
+    : user?.university;
+  if (!uni) return;
+  const educationDepartment = department ?? user?.department ?? null;
 
   // 1) Üniversite geneli topluluk
   const uniSlug = slugify(`${uni.shortName}-genel`);
@@ -176,19 +192,19 @@ export async function autoJoinDefaultCommunities(userId: string) {
   await joinCommunity(uniCommunity.id, userId);
 
   // 2) Bölüm topluluğu
-  if (user.department) {
-    const deptSlug = slugify(`${uni.shortName}-${user.department}`);
+  if (educationDepartment) {
+    const deptSlug = slugify(`${uni.shortName}-${educationDepartment}`);
     const deptCommunity = await prisma.community.upsert({
       where: { slug: deptSlug },
       update: {},
       create: {
         slug: deptSlug,
-        name: `${uni.shortName} ${user.department}`,
+        name: `${uni.shortName} ${educationDepartment}`,
         description: `${uni.name} ${user.department} bölümü öğrencileri. Ders notları, sınav takvimi, staj ve kariyer.`,
         scope: "DEPARTMENT",
         visibility: "PUBLIC",
         universityId: uni.id,
-        department: user.department,
+        department: educationDepartment,
         tags: ["bölüm", "ders"],
         createdById: userId,
       },

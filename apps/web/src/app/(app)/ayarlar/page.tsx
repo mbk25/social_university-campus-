@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { CLASS_YEAR_OPTIONS } from "@kampus/shared";
 import { ApiError, api, uploadImage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { MiniUser, User } from "@/lib/types";
+import type { MiniUser, University, User } from "@/lib/types";
 import { Avatar, Button, Input, Select, Spinner, Textarea, cx, useToast } from "@/components/ui";
 import { LockIcon, ShieldCheckIcon } from "@/components/icons";
 
@@ -218,10 +218,123 @@ function ProfileSettings({ user, onSaved }: { user: User; onSaved: (u: User) => 
         </div>
       )}
 
+      <EducationSettings user={user} onSaved={onSaved} groups={groups} />
+
       <Button loading={busy} onClick={save}>
         Değişiklikleri kaydet
       </Button>
     </div>
+  );
+}
+
+function EducationSettings({
+  user,
+  onSaved,
+  groups,
+}: {
+  user: User;
+  onSaved: (user: User) => void;
+  groups: DepartmentGroup[];
+}) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [department, setDepartment] = useState("");
+  const [classYear, setClassYear] = useState(1);
+  const [needsUniversity, setNeedsUniversity] = useState(false);
+  const [universityId, setUniversityId] = useState("");
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [codeSent, setCodeSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function start() {
+    setBusy(true);
+    try {
+      const result = await api.post<{ needsUniversitySelection: boolean }>("/auth/education/start", { email });
+      setNeedsUniversity(result.needsUniversitySelection);
+      if (result.needsUniversitySelection && universities.length === 0) {
+        const data = await api.get<{ items: University[] }>("/meta/universities");
+        setUniversities(data.items);
+      }
+      setCodeSent(true);
+      toast.show("Doğrulama kodu gönderildi", "success");
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : "Kod gönderilemedi", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function complete() {
+    setBusy(true);
+    try {
+      await api.post("/auth/education/complete", { email, code, department, classYear, universityId: universityId || undefined });
+      const fresh = await api.get<{ user: User }>("/auth/me");
+      onSaved(fresh.user);
+      setOpen(false);
+      setCodeSent(false);
+      setEmail(""); setCode(""); setDepartment(""); setUniversityId("");
+      toast.show("Eğitim bilgisi doğrulandı ve eklendi", "success");
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : "Eğitim bilgisi eklenemedi", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-xl surface-subtle p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[14px] font-bold">Diğer eğitimlerin</h2>
+          <p className="mt-1 text-[12.5px] text-muted">Her okul e-posta adresinle ayrı ayrı doğrulanır.</p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => setOpen((value) => !value)}>
+          {open ? "Vazgeç" : "Eğitim ekle"}
+        </Button>
+      </div>
+
+      {user.educations && user.educations.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {user.educations.map((education) => (
+            <div key={education.id} className="flex items-center gap-2 text-[13px] text-muted">
+              <ShieldCheckIcon width={16} height={16} className="shrink-0 brand-text" />
+              <span>{education.university.name} · {education.department} · {CLASS_YEAR_OPTIONS.find((item) => item.value === education.classYear)?.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="mt-4 grid gap-3 border-t pt-4">
+          <Input label="Diğer üniversite e-postan" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="ogrenci@universite.edu.tr" />
+          {!codeSent ? (
+            <Button loading={busy} onClick={start}>Doğrulama kodu gönder</Button>
+          ) : (
+            <>
+              <Input label="E-postadaki 6 haneli kod" inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} />
+              {needsUniversity && (
+                <Select label="Üniversite" value={universityId} onChange={(event) => setUniversityId(event.target.value)}>
+                  <option value="">Üniversite seç</option>
+                  {universities.map((university) => <option key={university.id} value={university.id}>{university.name}</option>)}
+                </Select>
+              )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select label="Bölüm" value={department} onChange={(event) => setDepartment(event.target.value)}>
+                  <option value="">Bölüm seç</option>
+                  {groups.map((group) => <optgroup key={group.faculty} label={group.faculty}>{group.departments.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>)}
+                </Select>
+                <Select label="Sınıf" value={classYear} onChange={(event) => setClassYear(Number(event.target.value))}>
+                  {CLASS_YEAR_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </Select>
+              </div>
+              <Button loading={busy} onClick={complete}>Doğrula ve ekle</Button>
+            </>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

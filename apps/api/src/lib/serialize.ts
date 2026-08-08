@@ -44,6 +44,12 @@ export interface UserRow {
   verifiedAt?: Date | null;
   createdAt?: Date;
   university?: UniversityRow;
+  educations?: Array<{
+    id: string;
+    department: string;
+    classYear: number;
+    university: UniversityRow;
+  }>;
   badges?: { code: string }[];
 }
 
@@ -69,6 +75,16 @@ export function serializeUser(
     classYear: showDept ? user.classYear ?? null : null,
     karma: user.karma ?? 0,
     university: serializeUniversity(user.university ?? null),
+    ...(showDept && user.educations
+      ? {
+          educations: user.educations.map((education) => ({
+            id: education.id,
+            department: education.department,
+            classYear: education.classYear,
+            university: serializeUniversity(education.university),
+          })),
+        }
+      : {}),
     createdAt: (user.createdAt ?? new Date()).toISOString(),
     isVerifiedStudent: !!user.verifiedAt,
     badges: (user.badges ?? []).map((b) => ({

@@ -263,6 +263,17 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {profile.educations && profile.educations.length > 0 && (
+              <div className="mt-2 space-y-1 text-[13px] text-muted">
+                {profile.educations.map((education) => (
+                  <div key={education.id} className="flex items-center gap-1.5">
+                    <GraduationIcon width={15} height={15} className="text-faint" />
+                    {education.university.name} · {education.department} · {classYearLabel(education.classYear)}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {profile.badges && profile.badges.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {profile.badges.map((badge) => (

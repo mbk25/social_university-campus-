@@ -1,6 +1,8 @@
 import argon2 from "argon2";
 import type { FastifyInstance } from "fastify";
 import {
+  addEducationCompleteSchema,
+  addEducationStartSchema,
   emailSchema,
   forgotPasswordSchema,
   loginSchema,
@@ -46,7 +48,7 @@ const argonOptions: argon2.Options = {
   parallelism: 1,
 };
 
-async function issueCode(email: string, purpose: "REGISTER" | "PASSWORD_RESET") {
+async function issueCode(email: string, purpose: "REGISTER" | "PASSWORD_RESET" | "ADD_EDUCATION") {
   const recent = await prisma.verificationCode.findFirst({
     where: { email, purpose, consumedAt: null },
     orderBy: { createdAt: "desc" },
@@ -81,7 +83,7 @@ async function issueCode(email: string, purpose: "REGISTER" | "PASSWORD_RESET") 
  * Kodu doğrular ama tüketmez — kayıt formunun 2. adımında anında geri bildirim
  * verebilmek için. Hatalı denemede sayaç yine artar.
  */
-async function assertCodeValid(email: string, code: string, purpose: "REGISTER" | "PASSWORD_RESET") {
+async function assertCodeValid(email: string, code: string, purpose: "REGISTER" | "PASSWORD_RESET" | "ADD_EDUCATION") {
   const record = await prisma.verificationCode.findFirst({
     where: { email, purpose, consumedAt: null },
     orderBy: { createdAt: "desc" },
@@ -110,7 +112,7 @@ async function assertCodeValid(email: string, code: string, purpose: "REGISTER" 
   return record;
 }
 
-async function consumeCode(email: string, code: string, purpose: "REGISTER" | "PASSWORD_RESET") {
+async function consumeCode(email: string, code: string, purpose: "REGISTER" | "PASSWORD_RESET" | "ADD_EDUCATION") {
   const record = await assertCodeValid(email, code, purpose);
   await prisma.verificationCode.update({
     where: { id: record.id },
@@ -195,6 +197,73 @@ export default async function authRoutes(app: FastifyInstance) {
     return { sent: true };
   });
 
+  // ---------------------------------------- ek eğitim: kod gönder / doğrula
+  app.post("/education/start", {
+    preHandler: app.authenticate,
+    config: { rateLimit: { max: 5, timeWindow: "10 minutes" } },
+  }, async (request) => {
+    const auth = requireUser(request);
+    const { email } = addEducationStartSchema.parse(request.body);
+    const resolved = await resolveUniversityForEmail(email);
+    const [primary, existing] = await Promise.all([
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
+      prisma.userEducation.findUnique({ where: { email }, select: { id: true } }),
+    ]);
+    if (primary || existing) {
+      const ownPrimary = primary?.id === auth.id;
+      throw conflict(
+        ownPrimary ? "Bu e-posta zaten ana eğitimin olarak kayıtlı" : "Bu e-posta başka bir hesapta kullanılıyor",
+        { email: "Kullanımdaki adres" },
+      );
+    }
+    const code = await issueCode(email, "ADD_EDUCATION");
+    await sendVerificationCode(email, code);
+    return {
+      sent: true,
+      email,
+      university: resolved.university,
+      needsUniversitySelection: resolved.needsSelection,
+      expiresInSeconds: CODE_TTL_MS / 1000,
+    };
+  });
+
+  app.post("/education/complete", {
+    preHandler: app.authenticate,
+    config: { rateLimit: { max: 10, timeWindow: "10 minutes" } },
+  }, async (request) => {
+    const auth = requireUser(request);
+    const body = addEducationCompleteSchema.parse(request.body);
+    const resolved = await resolveUniversityForEmail(body.email);
+    let universityId = resolved.university?.id ?? null;
+    if (resolved.needsSelection) {
+      if (!body.universityId) throw badRequest("Üniversiteni seçmelisin", { universityId: "Üniversite seçilmedi" });
+      const picked = await prisma.university.findFirst({
+        where: { id: body.universityId, isActive: true }, select: { id: true },
+      });
+      if (!picked) throw badRequest("Geçersiz üniversite seçimi", { universityId: "Bulunamadı" });
+      universityId = picked.id;
+    }
+    if (!universityId) throw badRequest("Üniversite bulunamadı");
+
+    const [primary, existing] = await Promise.all([
+      prisma.user.findUnique({ where: { email: body.email }, select: { id: true } }),
+      prisma.userEducation.findUnique({ where: { email: body.email }, select: { id: true } }),
+    ]);
+    if (primary || existing) throw conflict("Bu e-posta zaten kullanılıyor", { email: "Kullanımdaki adres" });
+
+    await consumeCode(body.email, body.code, "ADD_EDUCATION");
+    const education = await prisma.userEducation.create({
+      data: {
+        userId: auth.id, universityId, email: body.email, emailDomain: resolved.domain,
+        department: body.department, classYear: body.classYear,
+        isStudentAddress: resolved.isStudentAddress,
+      },
+      include: { university: true },
+    });
+    await autoJoinDefaultCommunities(auth.id, education.universityId, education.department);
+    return { education: { ...education, university: education.university } };
+  });
+
   // ------------------------------------------------ kayıt: tamamla
   app.post("/register/complete", {
     config: { rateLimit: { max: 10, timeWindow: "10 minutes" } },
@@ -270,7 +339,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const fresh = await prisma.user.findUniqueOrThrow({
       where: { id: user.id },
-      include: { university: true, badges: { select: { code: true } } },
+      include: { university: true, badges: { select: { code: true } }, educations: { include: { university: true } } },
     });
 
     return {
@@ -289,7 +358,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUnique({
       where: { email: body.email },
-      include: { university: true, badges: { select: { code: true } } },
+      include: { university: true, badges: { select: { code: true } }, educations: { include: { university: true } } },
     });
 
     // Kullanıcı yoksa da argon2 çalıştırıp zamanlama farkını kapatıyoruz.
@@ -343,7 +412,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { university: true, badges: { select: { code: true } } },
+      include: { university: true, badges: { select: { code: true } }, educations: { include: { university: true } } },
     });
     if (!user || user.status === "SUSPENDED") throw unauthorized("Oturum geçersiz");
 
@@ -415,7 +484,7 @@ export default async function authRoutes(app: FastifyInstance) {
     const auth = requireUser(request);
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: auth.id },
-      include: { university: true, badges: { select: { code: true } } },
+      include: { university: true, badges: { select: { code: true } }, educations: { include: { university: true } } },
     });
 
     const [posts, followers, following, communities, unreadNotifications] = await Promise.all([

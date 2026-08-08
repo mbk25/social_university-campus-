@@ -15,6 +15,13 @@ const USER_SELECT = {
   bio: true, department: true, classYear: true, karma: true, showDepartment: true,
   isPrivate: true, verifiedAt: true, createdAt: true, lastSeenAt: true, status: true,
   university: { select: { id: true, name: true, shortName: true, city: true, type: true } },
+  educations: {
+    select: {
+      id: true, department: true, classYear: true,
+      university: { select: { id: true, name: true, shortName: true, city: true, type: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  },
   badges: { select: { code: true } },
 } as const;
 

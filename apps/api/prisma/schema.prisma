@@ -31,6 +31,7 @@ model University {
   createdAt DateTime       @default(now())
 
   users        User[]
+  educations   UserEducation[]
   communities  Community[]
   events       Event[]
   notes        Note[]
@@ -113,10 +114,31 @@ model User {
   confessionLikes   ConfessionLike[]
   reportsMade       Report[]            @relation("Reporter")
   badges            UserBadge[]
+  educations        UserEducation[]
 
   @@index([universityId, department])
   @@index([karma])
   @@index([createdAt])
+}
+
+/// Kullanıcının ana hesabına ek olarak doğruladığı diğer eğitimleri.
+model UserEducation {
+  id               String     @id @default(cuid())
+  userId           String
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universityId     String
+  university       University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  email            String     @unique
+  emailDomain      String
+  department       String
+  classYear        Int
+  isStudentAddress Boolean    @default(false)
+  verifiedAt       DateTime   @default(now())
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([universityId, department])
 }
 
 /// Kayıt ve şifre sıfırlama için tek kullanımlık e-posta kodu.
@@ -124,6 +146,7 @@ enum VerificationPurpose {
   REGISTER
   PASSWORD_RESET
   EMAIL_CHANGE
+  ADD_EDUCATION
 }
 
 model VerificationCode {

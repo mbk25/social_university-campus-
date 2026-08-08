@@ -6,6 +6,13 @@ export interface University {
   type: "STATE" | "FOUNDATION" | "OTHER";
 }
 
+export interface Education {
+  id: string;
+  department: string;
+  classYear: number;
+  university: University;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -17,6 +24,7 @@ export interface User {
   classYear: number | null;
   karma: number;
   university: University | null;
+  educations?: Education[];
   createdAt: string;
   isVerifiedStudent: boolean;
   badges?: { code: string; label: string; icon: string }[];

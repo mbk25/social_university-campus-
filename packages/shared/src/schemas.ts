@@ -60,6 +60,16 @@ export const loginSchema = z.object({
 
 export const resendCodeSchema = z.object({ email: emailSchema });
 
+export const addEducationStartSchema = z.object({ email: emailSchema });
+
+export const addEducationCompleteSchema = z.object({
+  email: emailSchema,
+  code: z.string().regex(/^\d{6}$/, "Doğrulama kodu 6 haneli olmalı"),
+  department: z.string().trim().min(2).max(80),
+  classYear: z.number().int().min(1).max(9),
+  universityId: z.string().trim().min(1).optional(),
+});
+
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 
 export const resetPasswordSchema = z.object({

@@ -13,6 +13,13 @@ export interface Badge {
   icon: string;
 }
 
+export interface Education {
+  id: string;
+  department: string;
+  classYear: number;
+  university: University;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -24,6 +31,7 @@ export interface User {
   classYear: number | null;
   karma: number;
   university: University | null;
+  educations?: Education[];
   createdAt: string;
   isVerifiedStudent: boolean;
   badges?: Badge[];
