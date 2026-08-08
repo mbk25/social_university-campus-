@@ -18,6 +18,10 @@ interface NotifyInput {
  * Kullanıcı kendi eylemi için bildirim almaz.
  */
 export async function notify(input: NotifyInput): Promise<void> {
+  // Mesajlar kendi sohbet akışında ve Mesajlar rozetiyle takip edilir; genel
+  // sosyal bildirim merkezinde ikinci kez gösterilmez.
+  if (input.type === "MESSAGE") return;
+
   if (input.actorId && input.actorId === input.userId) return;
 
   // Engellenmiş kullanıcıdan bildirim gitmesin.

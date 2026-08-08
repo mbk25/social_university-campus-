@@ -64,7 +64,9 @@ export default function NotificationsScreen() {
       .catch(() => undefined);
 
     const socket = getSocket();
-    const handler = (n: Notification) => setItems((current) => [n, ...current]);
+    const handler = (n: Notification) => {
+      if (n.type !== "MESSAGE") setItems((current) => [n, ...current]);
+    };
     socket?.on("notification:new", handler);
     return () => {
       socket?.off("notification:new", handler);

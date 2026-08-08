@@ -20,6 +20,7 @@ export default async function notificationRoutes(app: FastifyInstance) {
     const notifications = await prisma.notification.findMany({
       where: {
         userId: user.id,
+        type: { not: "MESSAGE" },
         ...(query.filter === "UNREAD" ? { isRead: false } : {}),
         ...(query.filter === "MENTIONS" ? { type: { in: ["MENTION", "COMMENT_REPLY"] } } : {}),
         ...(cursor ? { createdAt: { lt: cursor.date } } : {}),
@@ -54,7 +55,7 @@ export default async function notificationRoutes(app: FastifyInstance) {
   app.get("/unread-count", { preHandler: app.authenticate }, async (request) => {
     const user = requireUser(request);
     const [notifications, messages] = await Promise.all([
-      prisma.notification.count({ where: { userId: user.id, isRead: false } }),
+      prisma.notification.count({ where: { userId: user.id, isRead: false, type: { not: "MESSAGE" } } }),
       prisma.conversationMember
         .findMany({ where: { userId: user.id }, select: { conversationId: true, lastReadAt: true } })
         .then(async (memberships) => {
