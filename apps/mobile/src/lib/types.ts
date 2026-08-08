@@ -112,6 +112,7 @@ export interface Message {
   replyTo: { id: string; content: string; senderName: string } | null;
   createdAt: string;
   isDeleted: boolean;
+  seenByPeer?: boolean;
   isMine?: boolean;
   pending?: boolean;
 }

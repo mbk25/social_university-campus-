@@ -169,7 +169,14 @@ export function setupSocket(server: HttpServer): SocketServer {
     // ---- Okundu bilgisi
     socket.on(SOCKET_EVENTS.MARK_READ, async (conversationId: unknown) => {
       if (typeof conversationId !== "string") return;
-      await markConversationRead(conversationId, userId).catch(() => undefined);
+      const readAt = await markConversationRead(conversationId, userId).catch(() => null);
+      if (readAt) {
+        socket.to(conversationRoom(conversationId)).emit(SOCKET_EVENTS.CONVERSATION_READ, {
+          conversationId,
+          userId,
+          readAt: readAt.toISOString(),
+        });
+      }
     });
 
     socket.on("disconnect", async () => {

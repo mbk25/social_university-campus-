@@ -195,6 +195,13 @@ export default async function chatRoutes(app: FastifyInstance) {
       .parse(request.query);
 
     await assertMember(id, user.id);
+    const conversation = await prisma.conversation.findUniqueOrThrow({
+      where: { id },
+      select: {
+        type: true,
+        members: { select: { userId: true, lastReadAt: true } },
+      },
+    });
     const cursor = decodeCursor(query.cursor);
 
     const messages = await prisma.message.findMany({
@@ -213,13 +220,21 @@ export default async function chatRoutes(app: FastifyInstance) {
 
     const hasMore = messages.length > query.limit;
     const items = hasMore ? messages.slice(0, query.limit) : messages;
+    const peerReadAt =
+      conversation.type === "DIRECT"
+        ? conversation.members.find((member) => member.userId !== user.id)?.lastReadAt ?? null
+        : null;
 
     return {
       // İstemci eskiden yeniye sıralı bekliyor.
       items: items
         .slice()
         .reverse()
-        .map((m) => ({ ...serializeMessage(m), isMine: m.senderId === user.id })),
+        .map((m) => ({
+          ...serializeMessage(m),
+          isMine: m.senderId === user.id,
+          seenByPeer: m.senderId === user.id && !!peerReadAt && m.createdAt <= peerReadAt,
+        })),
       nextCursor:
         hasMore && items.length > 0
           ? encodeCursor(items[items.length - 1].createdAt, items[items.length - 1].id)
@@ -251,7 +266,12 @@ export default async function chatRoutes(app: FastifyInstance) {
   app.post("/conversations/:id/read", { preHandler: app.authenticate }, async (request) => {
     const user = requireUser(request);
     const { id } = idParam.parse(request.params);
-    await markConversationRead(id, user.id);
+    const readAt = await markConversationRead(id, user.id);
+    emitToConversation(id, SOCKET_EVENTS.CONVERSATION_READ, {
+      conversationId: id,
+      userId: user.id,
+      readAt: readAt.toISOString(),
+    });
     return { ok: true };
   });
 

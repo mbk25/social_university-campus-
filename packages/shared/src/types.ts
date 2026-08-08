@@ -109,6 +109,8 @@ export interface PublicMessage {
   replyTo: { id: string; content: string; senderName: string } | null;
   createdAt: string;
   isDeleted: boolean;
+  /** Birebir sohbette karşı tarafın bu mesajı okuduğunu gösterir. */
+  seenByPeer?: boolean;
   isMine?: boolean;
 }
 
@@ -236,6 +238,7 @@ export const SOCKET_EVENTS = {
   NOTIFICATION_NEW: "notification:new",
   PRESENCE_UPDATE: "presence:update",
   CONVERSATION_UPDATED: "conversation:updated",
+  CONVERSATION_READ: "conversation:read:update",
   POST_LIVE: "post:live",
   ERROR: "error",
 } as const;

@@ -213,10 +213,12 @@ export async function sendMessage(args: SendMessageArgs) {
 
 export async function markConversationRead(conversationId: string, userId: string) {
   await assertMember(conversationId, userId);
+  const readAt = new Date();
   await prisma.conversationMember.update({
     where: { conversationId_userId: { conversationId, userId } },
-    data: { lastReadAt: new Date() },
+    data: { lastReadAt: readAt },
   });
+  return readAt;
 }
 
 /** Topluluğun sohbet odasını döndürür, yoksa oluşturur. */

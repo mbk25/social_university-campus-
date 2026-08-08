@@ -90,6 +90,18 @@ export default function ChatScreen() {
       );
     };
 
+    const onConversationRead = (data: { conversationId: string; userId: string; readAt: string }) => {
+      if (data.conversationId !== id || data.userId === user?.id || conversation?.type !== "DIRECT") return;
+      const readAt = new Date(data.readAt).getTime();
+      setMessages((current) =>
+        current.map((message) =>
+          (message.isMine ?? message.sender.id === user?.id) && new Date(message.createdAt).getTime() <= readAt
+            ? { ...message, seenByPeer: true }
+            : message,
+        ),
+      );
+    };
+
     const onTyping = (data: {
       conversationId: string;
       userId: string;
@@ -112,15 +124,17 @@ export default function ChatScreen() {
 
     socket.on("message:new", onMessage);
     socket.on("message:deleted", onDeleted);
+    socket.on("conversation:read:update", onConversationRead);
     socket.on("typing:update", onTyping);
 
     return () => {
       socket.emit("conversation:leave", id);
       socket.off("message:new", onMessage);
       socket.off("message:deleted", onDeleted);
+      socket.off("conversation:read:update", onConversationRead);
       socket.off("typing:update", onTyping);
     };
-  }, [id, user?.id, markConversationRead]);
+  }, [id, user?.id, conversation?.type, markConversationRead]);
 
   const loadOlder = useCallback(async () => {
     if (!cursor || loadingMore) return;
@@ -241,6 +255,10 @@ export default function ChatScreen() {
           // inverted listede "önceki mesaj" bir sonraki indekstir
           const previous = messages[index + 1];
           const sameSender = previous?.sender.id === item.sender.id;
+          const lastSeenMessageId =
+            conversation?.type === "DIRECT"
+              ? messages.find((message) => (message.isMine ?? message.sender.id === user?.id) && message.seenByPeer)?.id
+              : null;
 
           return (
             <View
@@ -312,6 +330,11 @@ export default function ChatScreen() {
                 >
                   {timeAgo(item.createdAt)}
                 </Text>
+                {item.id === lastSeenMessageId && (
+                  <Text style={{ color: palette.success, fontSize: 10.5, fontWeight: "700", marginTop: 2, textAlign: "right", marginHorizontal: 4 }}>
+                    Görüldü
+                  </Text>
+                )}
               </View>
             </View>
           );
