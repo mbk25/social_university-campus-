@@ -146,7 +146,7 @@ export function PostCard({
     try {
       await Promise.all(recipients.map(async (friend) => {
         const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", { type: "DIRECT", memberIds: [friend.id] });
-        await api.post(`/chat/conversations/${conversation.id}/messages`, { content: `Kampus'te seninle bir gönderi paylaştı: ${window.location.origin}/gonderi/${post.id}` });
+        await api.post(`/chat/conversations/${conversation.id}/messages`, { content: "", sharedPostId: post.id });
       }));
       setShareOpen(false);
       toast.show(`${recipients.length} kişiye gönderildi`, "success");

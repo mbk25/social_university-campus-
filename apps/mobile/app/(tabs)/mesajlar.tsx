@@ -129,6 +129,8 @@ export default function MessagesScreen() {
                   : ""}
                 {item.lastMessage?.isDeleted
                   ? "Mesaj silindi"
+                  : item.lastMessage?.sharedPost
+                    ? "Bir gönderi paylaştı"
                   : item.lastMessage?.content ||
                     (item.lastMessage?.attachments.length ? "📎 Dosya" : "Henüz mesaj yok")}
               </Text>

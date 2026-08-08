@@ -62,6 +62,12 @@ export function serializeMessage(message: {
   deletedAt: Date | null;
   sender: { id: string; username: string; displayName: string; avatarUrl: string | null };
   replyTo?: { id: string; content: string; sender: { displayName: string } } | null;
+  sharedPost?: {
+    id: string;
+    content: string;
+    media: unknown;
+    author: { id: string; username: string; displayName: string; avatarUrl: string | null };
+  } | null;
 }) {
   return {
     id: message.id,
@@ -76,6 +82,14 @@ export function serializeMessage(message: {
           senderName: message.replyTo.sender.displayName,
         }
       : null,
+    sharedPost: message.sharedPost && !message.deletedAt
+      ? {
+          id: message.sharedPost.id,
+          content: message.sharedPost.content,
+          media: toMedia(message.sharedPost.media),
+          author: serializeMiniUser(message.sharedPost.author),
+        }
+      : null,
     createdAt: message.createdAt.toISOString(),
     isDeleted: !!message.deletedAt,
   };
@@ -84,6 +98,12 @@ export function serializeMessage(message: {
 const MESSAGE_INCLUDE = {
   sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
   replyTo: { select: { id: true, content: true, sender: { select: { displayName: true } } } },
+  sharedPost: {
+    select: {
+      id: true, content: true, media: true,
+      author: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+    },
+  },
 } as const;
 
 export interface SendMessageArgs {
@@ -92,6 +112,7 @@ export interface SendMessageArgs {
   content: string;
   attachments?: MediaAsset[];
   replyToId?: string | null;
+  sharedPostId?: string | null;
   clientNonce?: string;
 }
 
@@ -121,6 +142,11 @@ export async function sendMessage(args: SendMessageArgs) {
     if (!parent) throw badRequest("Yanıtlanan mesaj bulunamadı");
   }
 
+  if (args.sharedPostId) {
+    const post = await prisma.post.findFirst({ where: { id: args.sharedPostId, deletedAt: null }, select: { id: true } });
+    if (!post) throw badRequest("Paylaşılan gönderi bulunamadı");
+  }
+
   const created = await prisma.message.create({
     data: {
       conversationId: args.conversationId,
@@ -128,6 +154,7 @@ export async function sendMessage(args: SendMessageArgs) {
       content: args.content,
       attachments: (args.attachments ?? []) as object,
       replyToId: args.replyToId ?? null,
+      sharedPostId: args.sharedPostId ?? null,
       clientNonce: args.clientNonce ?? null,
     },
     include: MESSAGE_INCLUDE,

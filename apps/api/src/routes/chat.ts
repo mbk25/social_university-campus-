@@ -32,6 +32,7 @@ const CONVERSATION_INCLUDE = {
     include: {
       sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
       replyTo: { select: { id: true, content: true, sender: { select: { displayName: true } } } },
+      sharedPost: { select: { id: true, content: true, media: true, author: { select: { id: true, username: true, displayName: true, avatarUrl: true } } } },
     },
   },
 } as const;
@@ -204,6 +205,7 @@ export default async function chatRoutes(app: FastifyInstance) {
       include: {
         sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
         replyTo: { select: { id: true, content: true, sender: { select: { displayName: true } } } },
+        sharedPost: { select: { id: true, content: true, media: true, author: { select: { id: true, username: true, displayName: true, avatarUrl: true } } } },
       },
       orderBy: { createdAt: "desc" },
       take: query.limit + 1,
@@ -237,6 +239,7 @@ export default async function chatRoutes(app: FastifyInstance) {
       content: body.content,
       attachments: body.attachments,
       replyToId: body.replyToId ?? null,
+      sharedPostId: body.sharedPostId ?? null,
       clientNonce: body.clientNonce,
     });
 

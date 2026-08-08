@@ -108,6 +108,7 @@ export interface Message {
   sender: MiniUser;
   content: string;
   attachments: MediaAsset[];
+  sharedPost: { id: string; content: string; media: MediaAsset[]; author: MiniUser } | null;
   replyTo: { id: string; content: string; senderName: string } | null;
   createdAt: string;
   isDeleted: boolean;

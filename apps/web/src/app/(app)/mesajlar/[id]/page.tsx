@@ -209,6 +209,7 @@ export default function ConversationPage() {
       replyTo: replyTo
         ? { id: replyTo.id, content: replyTo.content, senderName: replyTo.sender.displayName }
         : null,
+      sharedPost: null,
       createdAt: new Date().toISOString(),
       isDeleted: false,
       isMine: true,
@@ -393,7 +394,19 @@ export default function ConversationPage() {
                     </div>
                   )}
 
-                  {message.isDeleted ? (
+                  {message.sharedPost ? (
+                    <Link href={`/gonderi/${message.sharedPost.id}`} className={cx("block overflow-hidden rounded-xl", mine ? "bg-white/15" : "bg-[var(--bg-elevated)]")}>
+                      {message.sharedPost.media[0] && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={message.sharedPost.media[0].url} alt="" className="max-h-52 w-full object-cover" />
+                      )}
+                      <span className="block p-3">
+                        <span className="mb-1 block text-[12px] font-semibold opacity-75">{message.sharedPost.author.displayName} gönderi paylaştı</span>
+                        <span className="line-clamp-3 block text-[14px]">{message.sharedPost.content || "Görselli gönderi"}</span>
+                        <span className="mt-2 block text-[12px] font-semibold opacity-75">Gönderiyi görüntüle</span>
+                      </span>
+                    </Link>
+                  ) : message.isDeleted ? (
                     <span className="italic opacity-60">Bu mesaj silindi</span>
                   ) : (
                     <>

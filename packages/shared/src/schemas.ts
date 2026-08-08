@@ -168,10 +168,11 @@ export const sendMessageSchema = z.object({
   content: z.string().trim().max(4000),
   attachments: z.array(mediaItemSchema).max(4).optional(),
   replyToId: z.string().cuid().nullable().optional(),
+  sharedPostId: z.string().cuid().nullable().optional(),
   /** Aynı mesajın iki kez kaydedilmesini engeller. */
   clientNonce: z.string().max(64).optional(),
 }).refine(
-  (v) => v.content.length > 0 || (v.attachments?.length ?? 0) > 0,
+  (v) => v.content.length > 0 || (v.attachments?.length ?? 0) > 0 || !!v.sharedPostId,
   { message: "Mesaj boş olamaz", path: ["content"] },
 );
 

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -161,6 +162,7 @@ export default function ChatScreen() {
       content,
       attachments: [],
       replyTo: null,
+      sharedPost: null,
       createdAt: new Date().toISOString(),
       isDeleted: false,
       isMine: true,
@@ -259,15 +261,7 @@ export default function ChatScreen() {
 
               <View style={{ maxWidth: "78%" }}>
                 {!mine && !sameSender && conversation?.type !== "DIRECT" && (
-                  <Text
-                    style={{
-                      color: palette.textMuted,
-                      fontSize: 11.5,
-                      fontWeight: "600",
-                      marginBottom: 2,
-                      marginLeft: 4,
-                    }}
-                  >
+                  <Text style={{ color: palette.textMuted, fontSize: 11.5, fontWeight: "600", marginBottom: 2, marginLeft: 4 }}>
                     {item.sender.displayName}
                   </Text>
                 )}
@@ -285,7 +279,16 @@ export default function ChatScreen() {
                     opacity: item.pending ? 0.6 : 1,
                   }}
                 >
-                  <Text
+                  {item.sharedPost ? (
+                    <Pressable onPress={() => router.push(`/gonderi/${item.sharedPost!.id}`)} style={{ overflow: "hidden", borderRadius: 12, backgroundColor: mine ? "rgba(255,255,255,0.16)" : palette.bg, minWidth: 210 }}>
+                      {item.sharedPost.media[0] && <Image source={{ uri: item.sharedPost.media[0].url }} style={{ width: "100%", height: 150 }} resizeMode="cover" />}
+                      <View style={{ padding: 10 }}>
+                        <Text style={{ color: mine ? palette.white : palette.textMuted, fontSize: 11.5, fontWeight: "700", marginBottom: 4 }}>{item.sharedPost.author.displayName} gönderi paylaştı</Text>
+                        <Text numberOfLines={3} style={{ color: mine ? palette.white : palette.text, fontSize: 14, lineHeight: 19 }}>{item.sharedPost.content || "Görselli gönderi"}</Text>
+                        <Text style={{ color: mine ? palette.white : palette.brand, fontSize: 12, fontWeight: "700", marginTop: 8 }}>Gönderiyi görüntüle</Text>
+                      </View>
+                    </Pressable>
+                  ) : <Text
                     style={{
                       color: mine ? palette.white : palette.text,
                       fontSize: 14.5,
@@ -295,7 +298,7 @@ export default function ChatScreen() {
                     }}
                   >
                     {item.isDeleted ? "Bu mesaj silindi" : item.content}
-                  </Text>
+                  </Text>}
                 </View>
 
                 <Text

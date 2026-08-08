@@ -112,6 +112,8 @@ export default function MessagesPage() {
                       : ""}
                     {conversation.lastMessage?.isDeleted
                       ? "Mesaj silindi"
+                      : conversation.lastMessage?.sharedPost
+                        ? "Bir gönderi paylaştı"
                       : conversation.lastMessage?.content ||
                         (conversation.lastMessage?.attachments.length
                           ? "📎 Dosya"

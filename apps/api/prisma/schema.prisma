@@ -323,6 +323,7 @@ model Post {
   likes     PostLike[]
   bookmarks Bookmark[]
   poll      Poll?
+  sharedMessages Message[] @relation("SharedPost")
 
   @@index([createdAt])
   @@index([communityId, createdAt])
@@ -476,6 +477,9 @@ model Message {
   content     String  @db.VarChar(4000)
   attachments Json    @default("[]")
 
+  sharedPostId String?
+  sharedPost   Post?   @relation("SharedPost", fields: [sharedPostId], references: [id], onDelete: SetNull)
+
   replyToId String?
   replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
   replies   Message[] @relation("MessageReplies")
@@ -486,6 +490,7 @@ model Message {
   createdAt DateTime  @default(now())
 
   @@index([conversationId, createdAt])
+  @@index([sharedPostId])
   @@unique([conversationId, senderId, clientNonce])
 }
 
