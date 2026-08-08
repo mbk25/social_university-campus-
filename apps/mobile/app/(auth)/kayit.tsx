@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CLASS_YEAR_OPTIONS } from "@kampus/shared";
 import { ApiError, api } from "../../src/lib/api";
 import { useAuth } from "../../src/lib/auth";
 import type { User } from "../../src/lib/types";
@@ -626,16 +627,7 @@ export default function RegisterScreen() {
                   Sınıfın
                 </Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {[
-                    { value: 1, label: "1" },
-                    { value: 2, label: "2" },
-                    { value: 3, label: "3" },
-                    { value: 4, label: "4" },
-                    { value: 5, label: "5" },
-                    { value: 6, label: "6" },
-                    { value: 7, label: "Y.Lisans" },
-                    { value: 8, label: "Doktora" },
-                  ].map((option) => (
+                  {CLASS_YEAR_OPTIONS.map((option) => (
                     <Pressable
                       key={option.value}
                       onPress={() => setClassYear(option.value)}
@@ -656,7 +648,7 @@ export default function RegisterScreen() {
                           fontWeight: "600",
                         }}
                       >
-                        {option.label}
+                        {option.value <= 6 ? option.value : option.label}
                       </Text>
                     </Pressable>
                   ))}
