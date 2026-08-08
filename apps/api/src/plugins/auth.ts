@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import { prisma } from "../db";
+import { env } from "../env";
 import { forbidden, unauthorized } from "../lib/errors";
 import { verifyAccessToken } from "../lib/tokens";
 
@@ -54,6 +55,14 @@ async function loadUser(token: string): Promise<AuthUser> {
   });
 
   if (!user) throw unauthorized("Hesap bulunamadı");
+
+  // İlk kurulumda, sadece sunucunun ortam ayarında belirtilen kullanıcı adı
+  // yönetici olur. Rol veritabanında kalıcıdır; ayar sonradan kaldırılabilir.
+  const initialAdmin = env.INITIAL_ADMIN_USERNAME.toLocaleLowerCase("tr-TR");
+  if (initialAdmin && user.username.toLocaleLowerCase("tr-TR") === initialAdmin && user.role !== "ADMIN") {
+    await prisma.user.update({ where: { id: user.id }, data: { role: "ADMIN" } });
+    user.role = "ADMIN";
+  }
 
   if (user.status === "SUSPENDED") {
     const until = user.suspendedUntil;

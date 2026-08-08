@@ -41,6 +41,8 @@ const schema = z.object({
   MAIL_FROM: z.string().default("Kampus <noreply@kampusum.me>"),
 
   ALLOWED_DOMAIN_MODE: z.enum(["strict", "edu"]).default("strict"),
+  /** İlk yönetici hesabı. Kullanıcı adı eşleştiğinde rolü kalıcı olarak ADMIN yapılır. */
+  INITIAL_ADMIN_USERNAME: z.string().trim().default(""),
 
   UPLOAD_DIR: z.string().default(path.resolve(__dirname, "../uploads")),
   MAX_UPLOAD_MB: z.coerce.number().int().default(25),
