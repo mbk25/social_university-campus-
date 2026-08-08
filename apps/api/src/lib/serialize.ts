@@ -42,6 +42,7 @@ export interface UserRow {
   isPrivate?: boolean;
   karma?: number;
   isStudentAddress?: boolean;
+  role?: "STUDENT" | "MODERATOR" | "ADMIN";
   verifiedAt?: Date | null;
   createdAt?: Date;
   university?: UniversityRow;
@@ -90,6 +91,7 @@ export function serializeUser(
       : {}),
     createdAt: (user.createdAt ?? new Date()).toISOString(),
     isVerifiedStudent: !!user.verifiedAt,
+    ...(viewer?.viewerId === user.id ? { role: user.role ?? "STUDENT" } : {}),
     badges: (user.badges ?? []).map((b) => ({
       code: b.code,
       label: BADGES[b.code]?.label ?? b.code,

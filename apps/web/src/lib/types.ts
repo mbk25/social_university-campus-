@@ -36,6 +36,7 @@ export interface User {
   educations?: Education[];
   createdAt: string;
   isVerifiedStudent: boolean;
+  role?: "STUDENT" | "MODERATOR" | "ADMIN";
   badges?: Badge[];
   counts?: { posts: number; followers: number; following: number; communities: number };
   viewer?: { isFollowing: boolean; isFollowedBy: boolean; isBlocked: boolean; isSelf: boolean };

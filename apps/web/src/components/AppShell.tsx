@@ -173,6 +173,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {user?.role && user.role !== "STUDENT" && (
+            <Link
+              href="/yonetim"
+              className={cx(
+                "group relative flex items-center gap-3.5 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors",
+                isActive(pathname, "/yonetim")
+                  ? "brand-soft-bg brand-text font-semibold"
+                  : "text-muted hover:bg-[var(--bg-subtle)] hover:text-[var(--text)]",
+              )}
+              title="Yönetim"
+            >
+              <ShieldCheckIcon width={22} height={22} filled={isActive(pathname, "/yonetim")} />
+              <span className="hidden xl:block">Yönetim</span>
+            </Link>
+          )}
         </nav>
 
         <div className="space-y-2 pt-3">
@@ -337,6 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           badgeFor={badgeFor}
           pathname={pathname}
           user={user}
+          isStaff={!!user?.role && user.role !== "STUDENT"}
           onLogout={() => void logout()}
         />
       )}
@@ -364,6 +380,7 @@ function MobileMenu({
   badgeFor,
   pathname,
   user,
+  isStaff,
   onLogout,
 }: {
   onClose: () => void;
@@ -372,6 +389,7 @@ function MobileMenu({
   badgeFor: (item: NavItem) => number;
   pathname: string;
   user: User | null;
+  isStaff: boolean;
   onLogout: () => void;
 }) {
   useEffect(() => {
@@ -464,6 +482,21 @@ function MobileMenu({
           <div className="mx-4 border-t border-[var(--border)]" />
 
           <div className="p-2">
+            {isStaff && (
+              <Link
+                href="/yonetim"
+                onClick={onClose}
+                className={cx(
+                  "flex items-center gap-3.5 rounded-xl px-3 py-3 text-[15px] font-medium transition-colors",
+                  isActive(pathname, "/yonetim")
+                    ? "brand-soft-bg brand-text font-semibold"
+                    : "hover:bg-[var(--bg-subtle)]",
+                )}
+              >
+                <ShieldCheckIcon width={21} height={21} />
+                Yönetim
+              </Link>
+            )}
             <Link
               href="/ayarlar"
               onClick={onClose}

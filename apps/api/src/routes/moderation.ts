@@ -219,7 +219,7 @@ export default async function moderationRoutes(app: FastifyInstance) {
   app.get("/admin/overview", { preHandler: app.requireStaff }, async () => {
     const dayAgo = new Date(Date.now() - 86_400_000);
     const [
-      totalUsers, newUsers, activeToday, openReports, totalPosts, newPosts, communities,
+      totalUsers, newUsers, activeToday, openReports, totalPosts, newPosts, communities, recentUsers,
     ] = await Promise.all([
       prisma.user.count({ where: { status: "ACTIVE" } }),
       prisma.user.count({ where: { createdAt: { gte: dayAgo } } }),
@@ -228,10 +228,30 @@ export default async function moderationRoutes(app: FastifyInstance) {
       prisma.post.count({ where: { deletedAt: null } }),
       prisma.post.count({ where: { createdAt: { gte: dayAgo }, deletedAt: null } }),
       prisma.community.count({ where: { isArchived: false } }),
+      prisma.user.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          status: true,
+          verifiedAt: true,
+          createdAt: true,
+          university: { select: { shortName: true } },
+        },
+      }),
     ]);
 
     return {
       totalUsers, newUsers, activeToday, openReports, totalPosts, newPosts, communities,
+      recentUsers: recentUsers.map(({ verifiedAt, university, createdAt, ...user }) => ({
+        ...user,
+        createdAt: createdAt.toISOString(),
+        university: university?.shortName ?? null,
+        isVerified: !!verifiedAt,
+      })),
     };
   });
 }
