@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, Pressable, Share, Text, View } from "react-native";
+import { FlatList, Image, Modal, Pressable, Share, Text, View } from "react-native";
 import { ApiError, api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { formatCount, palette, radius, spacing, timeAgo } from "../lib/theme";
-import type { Post } from "../lib/types";
+import type { MiniUser, Post } from "../lib/types";
 import { Avatar } from "./ui";
 
 export function PostCard({
@@ -16,9 +17,35 @@ export function PostCard({
 }) {
   const [post, setPost] = useState(initial);
   const [voting, setVoting] = useState(false);
+  const { user } = useAuth();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [friends, setFriends] = useState<MiniUser[]>([]);
+  const [sharingTo, setSharingTo] = useState<string | null>(null);
 
   const author = post.author;
   const displayName = post.isAnonymous ? post.anonymousAlias ?? "Anonim" : author?.displayName ?? "";
+
+  async function openShare() {
+    if (!user) return;
+    setShareOpen(true);
+    try {
+      const data = await api.get<{ items: MiniUser[] }>(`/users/${user.username}/following?limit=50`);
+      setFriends(data.items);
+    } catch {
+      setFriends([]);
+    }
+  }
+
+  async function sendToFriend(friend: MiniUser) {
+    setSharingTo(friend.id);
+    try {
+      const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", { type: "DIRECT", memberIds: [friend.id] });
+      await api.post(`/chat/conversations/${conversation.id}/messages`, { content: `Kampus'te seninle bir gönderi paylaştı: https://kampusum.me/gonderi/${post.id}` });
+      setShareOpen(false);
+    } finally {
+      setSharingTo(null);
+    }
+  }
 
   async function toggleLike() {
     const liked = post.viewer.hasLiked;
@@ -262,9 +289,7 @@ export function PostCard({
         <Action
           icon="share-outline"
           color={palette.textMuted}
-          onPress={() =>
-            Share.share({ message: `Kampus'te bir gönderi: ${post.content.slice(0, 80)}` })
-          }
+          onPress={openShare}
         />
         <View style={{ flex: 1 }} />
         <Action
@@ -283,6 +308,28 @@ export function PostCard({
           />
         )}
       </View>
+
+      <Modal visible={shareOpen} transparent animationType="slide" onRequestClose={() => setShareOpen(false)}>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.55)" }}>
+          <View style={{ maxHeight: "70%", borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: palette.bgElevated, padding: spacing.lg }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md }}>
+              <Text style={{ color: palette.text, fontSize: 17, fontWeight: "700" }}>Arkadaşına gönder</Text>
+              <Pressable onPress={() => setShareOpen(false)}><Ionicons name="close" size={22} color={palette.textMuted} /></Pressable>
+            </View>
+            {friends.length === 0 ? (
+              <Text style={{ color: palette.textMuted, fontSize: 14, paddingVertical: spacing.md }}>Gönderebileceğin biri için önce bir kullanıcıyı takip et.</Text>
+            ) : (
+              <FlatList data={friends} keyExtractor={(friend) => friend.id} renderItem={({ item: friend }) => (
+                <Pressable onPress={() => void sendToFriend(friend)} disabled={sharingTo !== null} style={{ flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 10, opacity: sharingTo && sharingTo !== friend.id ? 0.55 : 1 }}>
+                  <Avatar uri={friend.avatarUrl} name={friend.displayName} size="sm" />
+                  <View style={{ flex: 1 }}><Text style={{ color: palette.text, fontSize: 14, fontWeight: "600" }}>{friend.displayName}</Text><Text style={{ color: palette.textFaint, fontSize: 12 }}>@{friend.username}</Text></View>
+                  <Ionicons name={sharingTo === friend.id ? "ellipsis-horizontal" : "send-outline"} size={19} color={palette.brand} />
+                </Pressable>
+              )} />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiError, api } from "@/lib/api";
-import type { Post } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
+import type { MiniUser, Post } from "@/lib/types";
 import {
   BookmarkIcon,
   CommentIcon,
@@ -13,10 +14,11 @@ import {
   MoreIcon,
   PinIcon,
   ShareIcon,
+  SendIcon,
   ShieldCheckIcon,
 } from "./icons";
 import { RichText } from "./RichText";
-import { Avatar, Button, Modal, cx, formatCount, timeAgo, useToast } from "./ui";
+import { Avatar, Button, Modal, Spinner, cx, formatCount, timeAgo, useToast } from "./ui";
 
 export function PostCard({
   post: initial,
@@ -29,11 +31,16 @@ export function PostCard({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const { user } = useAuth();
   const [post, setPost] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [friends, setFriends] = useState<MiniUser[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [sharingTo, setSharingTo] = useState<string | null>(null);
 
   const author = post.author;
   const displayName = post.isAnonymous ? post.anonymousAlias ?? "Anonim" : author?.displayName ?? "";
@@ -108,6 +115,39 @@ export function PostCard({
     }
     await navigator.clipboard.writeText(url);
     toast.show("Bağlantı kopyalandı", "success");
+  }
+
+  async function openShare() {
+    if (!user) return;
+    setShareOpen(true);
+    setFriendsLoading(true);
+    try {
+      const data = await api.get<{ items: MiniUser[] }>(`/users/${user.username}/following?limit=50`);
+      setFriends(data.items);
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : "Takip ettiklerin yüklenemedi", "error");
+    } finally {
+      setFriendsLoading(false);
+    }
+  }
+
+  async function sendToFriend(friend: MiniUser) {
+    setSharingTo(friend.id);
+    try {
+      const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", {
+        type: "DIRECT",
+        memberIds: [friend.id],
+      });
+      await api.post(`/chat/conversations/${conversation.id}/messages`, {
+        content: `Kampus'te seninle bir gönderi paylaştı: ${window.location.origin}/gonderi/${post.id}`,
+      });
+      setShareOpen(false);
+      toast.show(`${friend.displayName} kişisine gönderildi`, "success");
+    } catch (err) {
+      toast.show(err instanceof ApiError ? err.message : "Gönderi iletilemedi", "error");
+    } finally {
+      setSharingTo(null);
+    }
   }
 
   const mediaCount = post.media.length;
@@ -346,7 +386,7 @@ export function PostCard({
           />
         </Link>
         <ActionButton
-          onClick={share}
+          onClick={() => void openShare()}
           icon={<ShareIcon width={18} height={18} />}
           title="Paylaş"
         />
@@ -366,6 +406,25 @@ export function PostCard({
         targetType="POST"
         targetId={post.id}
       />
+
+      <Modal open={shareOpen} onClose={() => setShareOpen(false)} title="Arkadaşına gönder" size="sm">
+        <p className="mb-3 text-[13px] text-muted">Takip ettiğin birine bu gönderinin bağlantısını mesaj olarak gönder.</p>
+        {friendsLoading ? (
+          <div className="py-6 text-center"><Spinner size={22} className="brand-text" /></div>
+        ) : friends.length === 0 ? (
+          <p className="rounded-xl surface-subtle p-3 text-[13px] text-muted">Gönderebileceğin biri için önce bir kullanıcıyı takip et.</p>
+        ) : (
+          <div className="max-h-72 divide-y overflow-y-auto rounded-xl border">
+            {friends.map((friend) => (
+              <button key={friend.id} onClick={() => void sendToFriend(friend)} disabled={sharingTo !== null} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[var(--bg-subtle)] disabled:opacity-60">
+                <Avatar src={friend.avatarUrl} name={friend.displayName} size="sm" />
+                <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{friend.displayName}</span><span className="block text-[12px] text-faint">@{friend.username}</span></span>
+                {sharingTo === friend.id ? <Spinner size={16} className="brand-text" /> : <SendIcon width={17} height={17} className="brand-text" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       {lightbox && (
         <div
@@ -482,6 +541,7 @@ export function ReportModal({
           </label>
         ))}
       </div>
+
       <textarea
         value={details}
         onChange={(e) => setDetails(e.target.value)}
