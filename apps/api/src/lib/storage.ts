@@ -55,8 +55,11 @@ export async function saveFile(input: SaveFileInput): Promise<{ url: string; key
       }),
     );
 
-    const base = (env.S3_PUBLIC_URL || "").replace(/\/+$/, "");
-    return { url: `${base}/${key}`, key };
+    // `r2.dev` adresi bazı Türkiye ağlarında erişilemeyebiliyor. Dosyayı API
+    // üzerinden servis etmek hem bu erişim sorununu çözer hem de ileride kendi
+    // medya alan adımıza geçene kadar URL'leri tek yerde tutar.
+    const apiBase = env.API_PUBLIC_URL.replace(/\/+$/, "");
+    return { url: `${apiBase}/media/${key}`, key };
   }
 
   const dir = path.join(env.UPLOAD_DIR, input.folder);
