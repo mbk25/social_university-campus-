@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import type { Conversation } from "@/lib/types";
-import { ChatIcon, UsersIcon } from "@/components/icons";
+import { ChatIcon, PlusIcon, SearchIcon, UsersIcon } from "@/components/icons";
 import { Avatar, Button, EmptyState, Skeleton, cx, timeAgo } from "@/components/ui";
 
 export default function MessagesPage() {
   const [items, setItems] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -33,17 +34,39 @@ export default function MessagesPage() {
     };
   }, [load]);
 
+  const visibleItems = items.filter((conversation) =>
+    `${conversation.title ?? ""} ${conversation.lastMessage?.content ?? ""}`
+      .toLocaleLowerCase("tr")
+      .includes(query.toLocaleLowerCase("tr")),
+  );
+
   return (
-    <div className="mx-auto w-full max-w-[620px] space-y-4">
-      <h1 className="text-[26px] font-black tracking-tight">Mesajlar</h1>
+    <div className="mx-auto w-full max-w-[680px]">
+      <section className="surface overflow-hidden rounded-[var(--radius-card)]">
+        <header className="flex items-center justify-between border-b px-5 py-4">
+          <div>
+            <h1 className="text-[20px] font-black tracking-tight">Mesajlar</h1>
+            <p className="mt-0.5 text-[12.5px] text-muted">Özel konuşmaların ve topluluk sohbetlerin</p>
+          </div>
+          <Link href="/ara" className="rounded-full p-2 text-[var(--text)] transition-colors hover:bg-[var(--bg-subtle)]" aria-label="Yeni mesaj">
+            <PlusIcon width={22} height={22} />
+          </Link>
+        </header>
+
+        <div className="px-4 pt-4">
+          <label className="flex h-10 items-center gap-2 rounded-xl bg-[var(--bg-subtle)] px-3 text-muted focus-within:ring-2 focus-within:ring-[var(--ring)]">
+            <SearchIcon width={18} height={18} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Mesajlarda ara" className="min-w-0 flex-1 bg-transparent text-[14px] text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]" />
+          </label>
+        </div>
 
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-2 p-4">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[72px] rounded-[var(--radius-card)]" />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <EmptyState
           icon={<ChatIcon width={26} height={26} />}
           title="Henüz mesajın yok"
@@ -55,12 +78,12 @@ export default function MessagesPage() {
           }
         />
       ) : (
-        <div className="surface divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-card)]">
-          {items.map((conversation) => (
+        <div className="mt-3 divide-y divide-[var(--border)]">
+          {visibleItems.map((conversation) => (
             <Link
               key={conversation.id}
               href={`/mesajlar/${conversation.id}`}
-              className="flex items-center gap-3 p-3.5 transition-colors hover:bg-[var(--bg-subtle)]"
+              className={cx("flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[var(--bg-subtle)]", conversation.unreadCount > 0 && "bg-[var(--brand-soft)]/30")}
             >
               <Avatar
                 src={conversation.avatarUrl}
@@ -95,9 +118,7 @@ export default function MessagesPage() {
                           : "Henüz mesaj yok")}
                   </span>
                   {conversation.unreadCount > 0 && (
-                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] px-1.5 text-[11px] font-bold text-white">
-                      {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                    </span>
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--brand)]" aria-label={`${conversation.unreadCount} okunmamış mesaj`} />
                   )}
                 </div>
                 {conversation.type === "COMMUNITY" && (
@@ -108,6 +129,7 @@ export default function MessagesPage() {
           ))}
         </div>
       )}
+      </section>
     </div>
   );
 }

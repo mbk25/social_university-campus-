@@ -1,6 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, Text, TextInput, View } from "react-native";
 import { api } from "../../src/lib/api";
 import { getSocket } from "../../src/lib/socket";
 import { palette, spacing, timeAgo } from "../../src/lib/theme";
@@ -11,6 +12,7 @@ export default function MessagesScreen() {
   const [items, setItems] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -38,9 +40,26 @@ export default function MessagesScreen() {
   return (
     <FlatList
       style={{ flex: 1, backgroundColor: palette.bg }}
-      data={items}
+      data={items.filter((item) => `${item.title ?? ""} ${item.lastMessage?.content ?? ""}`.toLocaleLowerCase("tr").includes(query.toLocaleLowerCase("tr")))}
       keyExtractor={(item) => item.id}
       contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+      ListHeaderComponent={
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md }}>
+            <View>
+              <Text style={{ color: palette.text, fontSize: 24, fontWeight: "800", letterSpacing: -0.4 }}>Mesajlar</Text>
+              <Text style={{ color: palette.textMuted, fontSize: 12.5, marginTop: 2 }}>Özel konuşmaların ve toplulukların</Text>
+            </View>
+            <Pressable onPress={() => router.push("/ara")} hitSlop={10} style={{ width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, backgroundColor: palette.bgElevated }}>
+              <Ionicons name="create-outline" size={21} color={palette.text} />
+            </Pressable>
+          </View>
+          <View style={{ height: 40, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, backgroundColor: palette.bgElevated, paddingHorizontal: 12 }}>
+            <Ionicons name="search-outline" size={18} color={palette.textFaint} />
+            <TextInput value={query} onChangeText={setQuery} placeholder="Mesajlarda ara" placeholderTextColor={palette.textFaint} style={{ flex: 1, color: palette.text, fontSize: 14 }} />
+          </View>
+        </View>
+      }
       ItemSeparatorComponent={Divider}
       refreshControl={
         <RefreshControl
@@ -72,7 +91,7 @@ export default function MessagesScreen() {
             gap: spacing.md,
             paddingHorizontal: spacing.lg,
             paddingVertical: 13,
-            backgroundColor: pressed ? palette.bgElevated : "transparent",
+            backgroundColor: pressed || item.unreadCount > 0 ? palette.brandSoft : "transparent",
           })}
         >
           <Avatar
@@ -117,18 +136,14 @@ export default function MessagesScreen() {
               {item.unreadCount > 0 && (
                 <View
                   style={{
-                    minWidth: 20,
-                    height: 20,
-                    paddingHorizontal: 6,
-                    borderRadius: 10,
+                    width: 9,
+                    height: 9,
+                    borderRadius: 5,
                     backgroundColor: palette.brandStrong,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ color: palette.white, fontSize: 11, fontWeight: "800" }}>
-                    {item.unreadCount > 99 ? "99+" : item.unreadCount}
-                  </Text>
                 </View>
               )}
             </View>

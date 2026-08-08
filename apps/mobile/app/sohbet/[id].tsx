@@ -208,14 +208,14 @@ export default function ChatScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={90}
     >
-      <Stack.Screen options={{ title: conversation?.title ?? "Sohbet" }} />
+      <Stack.Screen options={{ title: conversation?.title ?? "Sohbet", headerTitleStyle: { fontWeight: "700" } }} />
 
       <FlatList
         ref={listRef}
         data={messages}
         inverted
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: spacing.md, gap: 4 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.lg, gap: 4 }}
         onEndReachedThreshold={0.4}
         onEndReached={loadOlder}
         ListHeaderComponent={
@@ -277,11 +277,11 @@ export default function ChatScreen() {
                     backgroundColor: mine ? palette.brandStrong : palette.bgElevated,
                     borderWidth: mine ? 0 : 1,
                     borderColor: palette.border,
-                    borderRadius: radius.lg,
+                    borderRadius: 20,
                     borderBottomRightRadius: mine ? 4 : radius.lg,
                     borderBottomLeftRadius: mine ? radius.lg : 4,
                     paddingHorizontal: 13,
-                    paddingVertical: 9,
+                    paddingVertical: 10,
                     opacity: item.pending ? 0.6 : 1,
                   }}
                 >
@@ -319,12 +319,15 @@ export default function ChatScreen() {
         style={{
           flexDirection: "row",
           alignItems: "flex-end",
-          gap: spacing.sm,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
+          gap: 6,
+          marginHorizontal: spacing.md,
+          marginBottom: spacing.sm,
+          paddingHorizontal: 7,
+          paddingVertical: 6,
           borderTopWidth: 1,
           borderTopColor: palette.border,
-          backgroundColor: palette.bgElevated,
+          borderRadius: 24,
+          backgroundColor: palette.bgSubtle,
         }}
       >
         <TextInput
@@ -340,12 +343,10 @@ export default function ChatScreen() {
           style={{
             flex: 1,
             maxHeight: 110,
-            backgroundColor: palette.bgSubtle,
-            borderWidth: 1,
-            borderColor: palette.border,
-            borderRadius: radius.lg,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
+            backgroundColor: "transparent",
+            borderRadius: 20,
+            paddingHorizontal: 10,
+            paddingVertical: 8,
             color: palette.text,
             fontSize: 15,
           }}
@@ -354,9 +355,9 @@ export default function ChatScreen() {
           onPress={send}
           disabled={!draft.trim()}
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 21,
+            width: 38,
+            height: 38,
+            borderRadius: 19,
             backgroundColor: palette.brandStrong,
             alignItems: "center",
             justifyContent: "center",

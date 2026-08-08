@@ -286,9 +286,9 @@ export default function ConversationPage() {
   const typingNames = Object.values(typingUsers);
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-140px)] w-full max-w-[720px] flex-col lg:h-[calc(100vh-64px)]">
+    <div className="mx-auto flex h-[calc(100vh-140px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[var(--radius-card)] surface lg:h-[calc(100vh-64px)]">
       {/* ------------------------------------------------------------ Başlık */}
-      <header className="surface flex items-center gap-3 rounded-t-[var(--radius-card)] px-4 py-3">
+      <header className="flex items-center gap-3 border-b bg-[var(--bg-elevated)] px-4 py-3">
         <button
           onClick={() => router.push("/mesajlar")}
           className="rounded-lg p-1.5 text-muted hover:bg-[var(--bg-subtle)] lg:hidden"
@@ -333,7 +333,7 @@ export default function ConversationPage() {
         onScroll={(e) => {
           if (e.currentTarget.scrollTop < 80) void loadOlder();
         }}
-        className="surface flex-1 space-y-1 overflow-y-auto border-y-0 px-3 py-3"
+        className="flex-1 space-y-1 overflow-y-auto bg-[var(--bg)] px-4 py-4"
       >
         {loadingMore && (
           <div className="flex justify-center py-2">
@@ -372,7 +372,7 @@ export default function ConversationPage() {
 
                 <div
                   className={cx(
-                    "relative rounded-2xl px-3.5 py-2 text-[14.5px] leading-relaxed",
+                    "relative rounded-[20px] px-3.5 py-2.5 text-[14.5px] leading-relaxed shadow-sm",
                     mine
                       ? "rounded-br-md bg-[var(--brand)] text-white"
                       : "rounded-bl-md surface-subtle",
@@ -458,7 +458,7 @@ export default function ConversationPage() {
       </div>
 
       {/* ------------------------------------------------------------ Yazma */}
-      <div className="surface rounded-b-[var(--radius-card)] px-3 py-2.5">
+      <div className="border-t bg-[var(--bg-elevated)] px-3 py-3">
         {replyTo && (
           <div className="mb-2 flex items-center justify-between gap-2 rounded-lg surface-subtle px-3 py-1.5 text-[12.5px]">
             <span className="min-w-0 truncate">
@@ -488,7 +488,7 @@ export default function ConversationPage() {
           </div>
         )}
 
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-2 rounded-[22px] border bg-[var(--bg-subtle)] py-1.5 pl-1.5 pr-2 focus-within:border-[var(--brand)]">
           <input
             ref={fileRef}
             type="file"
@@ -500,7 +500,7 @@ export default function ConversationPage() {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="rounded-lg p-2 text-muted transition-colors hover:bg-[var(--bg-subtle)] hover:brand-text"
+            className="rounded-full p-2 text-muted transition-colors hover:bg-[var(--bg-elevated)] hover:brand-text"
             aria-label="Görsel ekle"
           >
             {uploading ? <Spinner size={19} /> : <ImageIcon width={20} height={20} />}
@@ -521,13 +521,13 @@ export default function ConversationPage() {
             placeholder="Mesaj yaz..."
             rows={1}
             maxLength={4000}
-            className="max-h-32 flex-1 resize-none rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-[15px] outline-none focus-ring"
+            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] outline-none"
           />
 
           <Button
             onClick={send}
             disabled={(!draft.trim() && attachments.length === 0) || sending}
-            className="h-10 w-10 !p-0"
+            className="h-9 w-9 !rounded-full !p-0"
             aria-label="Gönder"
           >
             <SendIcon width={18} height={18} />
