@@ -40,7 +40,8 @@ export function PostCard({
   const [shareOpen, setShareOpen] = useState(false);
   const [friends, setFriends] = useState<MiniUser[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
-  const [sharingTo, setSharingTo] = useState<string | null>(null);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [sharing, setSharing] = useState(false);
 
   const author = post.author;
   const displayName = post.isAnonymous ? post.anonymousAlias ?? "Anonim" : author?.displayName ?? "";
@@ -119,6 +120,7 @@ export function PostCard({
 
   async function openShare() {
     if (!user) return;
+    setSelectedFriendIds([]);
     setShareOpen(true);
     setFriendsLoading(true);
     try {
@@ -131,22 +133,27 @@ export function PostCard({
     }
   }
 
-  async function sendToFriend(friend: MiniUser) {
-    setSharingTo(friend.id);
+  function toggleFriend(friendId: string) {
+    setSelectedFriendIds((current) =>
+      current.includes(friendId) ? current.filter((id) => id !== friendId) : [...current, friendId],
+    );
+  }
+
+  async function sendToFriends() {
+    const recipients = friends.filter((friend) => selectedFriendIds.includes(friend.id));
+    if (recipients.length === 0) return;
+    setSharing(true);
     try {
-      const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", {
-        type: "DIRECT",
-        memberIds: [friend.id],
-      });
-      await api.post(`/chat/conversations/${conversation.id}/messages`, {
-        content: `Kampus'te seninle bir gönderi paylaştı: ${window.location.origin}/gonderi/${post.id}`,
-      });
+      await Promise.all(recipients.map(async (friend) => {
+        const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", { type: "DIRECT", memberIds: [friend.id] });
+        await api.post(`/chat/conversations/${conversation.id}/messages`, { content: `Kampus'te seninle bir gönderi paylaştı: ${window.location.origin}/gonderi/${post.id}` });
+      }));
       setShareOpen(false);
-      toast.show(`${friend.displayName} kişisine gönderildi`, "success");
+      toast.show(`${recipients.length} kişiye gönderildi`, "success");
     } catch (err) {
       toast.show(err instanceof ApiError ? err.message : "Gönderi iletilemedi", "error");
     } finally {
-      setSharingTo(null);
+      setSharing(false);
     }
   }
 
@@ -416,13 +423,20 @@ export function PostCard({
         ) : (
           <div className="max-h-72 divide-y overflow-y-auto rounded-xl border">
             {friends.map((friend) => (
-              <button key={friend.id} onClick={() => void sendToFriend(friend)} disabled={sharingTo !== null} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[var(--bg-subtle)] disabled:opacity-60">
+              <button key={friend.id} onClick={() => toggleFriend(friend.id)} disabled={sharing} className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-[var(--bg-subtle)] disabled:opacity-60">
                 <Avatar src={friend.avatarUrl} name={friend.displayName} size="sm" />
                 <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-semibold">{friend.displayName}</span><span className="block text-[12px] text-faint">@{friend.username}</span></span>
-                {sharingTo === friend.id ? <Spinner size={16} className="brand-text" /> : <SendIcon width={17} height={17} className="brand-text" />}
+                <span className={cx("flex h-5 w-5 items-center justify-center rounded-md border", selectedFriendIds.includes(friend.id) ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-[var(--border-strong)]")}>
+                  {selectedFriendIds.includes(friend.id) && "✓"}
+                </span>
               </button>
             ))}
           </div>
+        )}
+        {friends.length > 0 && (
+          <Button className="mt-3" fullWidth loading={sharing} disabled={selectedFriendIds.length === 0} onClick={() => void sendToFriends()}>
+            {selectedFriendIds.length > 0 ? `${selectedFriendIds.length} kişiye gönder` : "Gönder"}
+          </Button>
         )}
       </Modal>
 

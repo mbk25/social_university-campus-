@@ -20,13 +20,15 @@ export function PostCard({
   const { user } = useAuth();
   const [shareOpen, setShareOpen] = useState(false);
   const [friends, setFriends] = useState<MiniUser[]>([]);
-  const [sharingTo, setSharingTo] = useState<string | null>(null);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [sharing, setSharing] = useState(false);
 
   const author = post.author;
   const displayName = post.isAnonymous ? post.anonymousAlias ?? "Anonim" : author?.displayName ?? "";
 
   async function openShare() {
     if (!user) return;
+    setSelectedFriendIds([]);
     setShareOpen(true);
     try {
       const data = await api.get<{ items: MiniUser[] }>(`/users/${user.username}/following?limit=50`);
@@ -36,14 +38,22 @@ export function PostCard({
     }
   }
 
-  async function sendToFriend(friend: MiniUser) {
-    setSharingTo(friend.id);
+  function toggleFriend(friendId: string) {
+    setSelectedFriendIds((current) => current.includes(friendId) ? current.filter((id) => id !== friendId) : [...current, friendId]);
+  }
+
+  async function sendToFriends() {
+    const recipients = friends.filter((friend) => selectedFriendIds.includes(friend.id));
+    if (recipients.length === 0) return;
+    setSharing(true);
     try {
-      const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", { type: "DIRECT", memberIds: [friend.id] });
-      await api.post(`/chat/conversations/${conversation.id}/messages`, { content: `Kampus'te seninle bir gönderi paylaştı: https://kampusum.me/gonderi/${post.id}` });
+      await Promise.all(recipients.map(async (friend) => {
+        const { conversation } = await api.post<{ conversation: { id: string } }>("/chat/conversations", { type: "DIRECT", memberIds: [friend.id] });
+        await api.post(`/chat/conversations/${conversation.id}/messages`, { content: `Kampus'te seninle bir gönderi paylaştı: https://kampusum.me/gonderi/${post.id}` });
+      }));
       setShareOpen(false);
     } finally {
-      setSharingTo(null);
+      setSharing(false);
     }
   }
 
@@ -320,12 +330,19 @@ export function PostCard({
               <Text style={{ color: palette.textMuted, fontSize: 14, paddingVertical: spacing.md }}>Gönderebileceğin biri için önce bir kullanıcıyı takip et.</Text>
             ) : (
               <FlatList data={friends} keyExtractor={(friend) => friend.id} renderItem={({ item: friend }) => (
-                <Pressable onPress={() => void sendToFriend(friend)} disabled={sharingTo !== null} style={{ flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 10, opacity: sharingTo && sharingTo !== friend.id ? 0.55 : 1 }}>
+                <Pressable onPress={() => toggleFriend(friend.id)} disabled={sharing} style={{ flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: 10, opacity: sharing ? 0.55 : 1 }}>
                   <Avatar uri={friend.avatarUrl} name={friend.displayName} size="sm" />
                   <View style={{ flex: 1 }}><Text style={{ color: palette.text, fontSize: 14, fontWeight: "600" }}>{friend.displayName}</Text><Text style={{ color: palette.textFaint, fontSize: 12 }}>@{friend.username}</Text></View>
-                  <Ionicons name={sharingTo === friend.id ? "ellipsis-horizontal" : "send-outline"} size={19} color={palette.brand} />
+                  <View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center", borderRadius: 6, borderWidth: 1, borderColor: selectedFriendIds.includes(friend.id) ? palette.brand : palette.borderStrong, backgroundColor: selectedFriendIds.includes(friend.id) ? palette.brandStrong : "transparent" }}>
+                    {selectedFriendIds.includes(friend.id) && <Ionicons name="checkmark" size={15} color={palette.white} />}
+                  </View>
                 </Pressable>
               )} />
+            )}
+            {friends.length > 0 && (
+              <Pressable disabled={selectedFriendIds.length === 0 || sharing} onPress={() => void sendToFriends()} style={{ marginTop: spacing.md, height: 46, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: palette.brandStrong, opacity: selectedFriendIds.length === 0 || sharing ? 0.5 : 1 }}>
+                <Text style={{ color: palette.white, fontSize: 15, fontWeight: "700" }}>{selectedFriendIds.length > 0 ? `${selectedFriendIds.length} kişiye gönder` : "Gönder"}</Text>
+              </Pressable>
             )}
           </View>
         </View>
