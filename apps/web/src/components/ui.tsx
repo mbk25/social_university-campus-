@@ -13,6 +13,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import { CheckIcon, CloseIcon } from "./icons";
 
 export function cx(...classes: (string | false | null | undefined)[]) {
@@ -317,7 +318,7 @@ export function Modal({
 
   const widths = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl" };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
         className="absolute inset-0 bg-black/55 backdrop-blur-sm"
@@ -347,6 +348,8 @@ export function Modal({
         <div className="p-5">{children}</div>
       </div>
     </div>
+    ,
+    document.body,
   );
 }
 
