@@ -10,8 +10,7 @@ import type { Conversation, MediaAsset, Message } from "@/lib/types";
 import { ArrowLeftIcon, CloseIcon, ImageIcon, SendIcon } from "@/components/icons";
 import { Avatar, Button, Spinner, cx, timeAgo, useToast } from "@/components/ui";
 
-export default function ConversationPage() {
-  const { id } = useParams<{ id: string }>();
+export function ConversationPanel({ id, embedded = false }: { id: string; embedded?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const { user, setCounts } = useAuth();
@@ -301,7 +300,12 @@ export default function ConversationPage() {
   const typingNames = Object.values(typingUsers);
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-140px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[var(--radius-card)] surface lg:h-[calc(100vh-64px)]">
+    <div
+      className={cx(
+        "flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--bg)]",
+        !embedded && "mx-auto h-[calc(100vh-140px)] max-w-[760px] rounded-[var(--radius-card)] surface lg:h-[calc(100vh-64px)]",
+      )}
+    >
       {/* ------------------------------------------------------------ Başlık */}
       <header className="flex items-center gap-3 border-b bg-[var(--bg-elevated)] px-4 py-3">
         <button
@@ -570,4 +574,16 @@ export default function ConversationPage() {
       </div>
     </div>
   );
+}
+
+/** Eski sohbet bağlantıları da gelen kutusundaki sağ panele yönlensin. */
+export default function ConversationPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`/mesajlar?sohbet=${encodeURIComponent(id)}`);
+  }, [id, router]);
+
+  return <div className="flex h-[60vh] items-center justify-center"><Spinner size={26} className="text-muted" /></div>;
 }

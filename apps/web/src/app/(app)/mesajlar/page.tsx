@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { getSocket } from "@/lib/socket";
 import type { Conversation } from "@/lib/types";
 import { ChatIcon, PlusIcon, SearchIcon, SendIcon } from "@/components/icons";
 import { Avatar, Button, Skeleton, cx, timeAgo } from "@/components/ui";
+import { ConversationPanel } from "./[id]/page";
 
 function preview(conversation: Conversation) {
   const message = conversation.lastMessage;
@@ -20,6 +22,8 @@ function preview(conversation: Conversation) {
 
 export default function MessagesPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const selectedConversationId = searchParams.get("sohbet");
   const [items, setItems] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -65,7 +69,7 @@ export default function MessagesPage() {
   return (
     <div className="mx-auto h-[calc(100dvh-7.5rem)] min-h-[600px] w-full max-w-[1090px] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[0_24px_80px_-40px_rgba(0,0,0,.75)] sm:h-[calc(100dvh-2rem)]">
       <div className="grid h-full grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col bg-[var(--bg-elevated)] lg:border-r lg:border-[var(--border)]">
+        <aside className={cx("min-h-0 flex-col bg-[var(--bg-elevated)] lg:border-r lg:border-[var(--border)]", selectedConversationId ? "hidden lg:flex" : "flex")}>
           <header className="flex items-center justify-between px-6 pb-4 pt-6">
             <div className="min-w-0">
               <h1 className="truncate text-[21px] font-black tracking-tight">{user?.username ?? "Mesajlar"}</h1>
@@ -98,7 +102,7 @@ export default function MessagesPage() {
               <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.08em] text-faint">Hızlı erişim</p>
               <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
                 {quickItems.map((conversation) => (
-                  <Link key={conversation.id} href={`/mesajlar/${conversation.id}`} className="w-[58px] shrink-0 text-center">
+                  <Link key={conversation.id} href={`/mesajlar?sohbet=${conversation.id}`} className="w-[58px] shrink-0 text-center">
                     <span className="relative inline-flex rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400 p-[2px]">
                       <Avatar src={conversation.avatarUrl} name={conversation.title ?? "Sohbet"} size="md" className="ring-2 ring-[var(--bg-elevated)]" />
                       {conversation.isOnline && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--bg-elevated)] bg-emerald-500" aria-label="Çevrimiçi" />}
@@ -124,10 +128,12 @@ export default function MessagesPage() {
               visibleItems.map((conversation) => (
                 <Link
                   key={conversation.id}
-                  href={`/mesajlar/${conversation.id}`}
+                  href={`/mesajlar?sohbet=${conversation.id}`}
                   className={cx(
                     "group mx-1 flex items-center gap-3 rounded-2xl px-3 py-3 transition-all hover:bg-[var(--bg-subtle)]",
-                    conversation.unreadCount > 0 && "bg-[var(--brand-soft)]/45",
+                    selectedConversationId === conversation.id
+                      ? "bg-[var(--brand-soft)]"
+                      : conversation.unreadCount > 0 && "bg-[var(--brand-soft)]/45",
                   )}
                 >
                   <Avatar
@@ -159,14 +165,20 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        <section className="relative hidden overflow-hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:px-10 lg:text-center">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,104,255,.12),transparent_43%)]" />
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--bg-subtle)] text-[var(--brand)] shadow-[0_20px_45px_-25px_var(--brand)]">
-            <SendIcon width={43} height={43} />
-          </div>
-          <h2 className="relative mt-6 text-[26px] font-black tracking-tight">Mesajların</h2>
-          <p className="relative mt-2 max-w-sm text-[14.5px] leading-relaxed text-muted">Arkadaşlarınla ve topluluklarınla bağlantıda kal. Bir mesaj göndererek yeni bir sohbet başlat.</p>
-          <Link href="/ara" className="relative mt-6"><Button size="md" icon={<PlusIcon width={17} height={17} />}>Yeni mesaj</Button></Link>
+        <section className={cx("relative min-h-0 overflow-hidden", selectedConversationId ? "flex" : "hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:px-10 lg:text-center")}>
+          {selectedConversationId ? (
+            <ConversationPanel id={selectedConversationId} embedded />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,104,255,.12),transparent_43%)]" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--bg-subtle)] text-[var(--brand)] shadow-[0_20px_45px_-25px_var(--brand)]">
+                <SendIcon width={43} height={43} />
+              </div>
+              <h2 className="relative mt-6 text-[26px] font-black tracking-tight">Mesajların</h2>
+              <p className="relative mt-2 max-w-sm text-[14.5px] leading-relaxed text-muted">Arkadaşlarınla ve topluluklarınla bağlantıda kal. Bir mesaj göndererek yeni bir sohbet başlat.</p>
+              <Link href="/ara" className="relative mt-6"><Button size="md" icon={<PlusIcon width={17} height={17} />}>Yeni mesaj</Button></Link>
+            </>
+          )}
         </section>
       </div>
     </div>
