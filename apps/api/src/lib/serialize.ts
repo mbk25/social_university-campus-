@@ -39,6 +39,7 @@ export interface UserRow {
   department?: string | null;
   showDepartment?: boolean;
   classYear?: number | null;
+  isPrivate?: boolean;
   karma?: number;
   isStudentAddress?: boolean;
   verifiedAt?: Date | null;
@@ -73,6 +74,8 @@ export function serializeUser(
     bio: user.bio ?? null,
     department: showDept ? user.department ?? null : null,
     classYear: showDept ? user.classYear ?? null : null,
+    isPrivate: !!user.isPrivate,
+    showDepartment: showDept,
     karma: user.karma ?? 0,
     university: serializeUniversity(user.university ?? null),
     ...(showDept && user.educations

@@ -340,8 +340,8 @@ function EducationSettings({
 
 function PrivacySettings({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
   const toast = useToast();
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [showDepartment, setShowDepartment] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(user.isPrivate);
+  const [showDepartment, setShowDepartment] = useState(user.showDepartment);
   const [blocked, setBlocked] = useState<MiniUser[]>([]);
 
   useEffect(() => {
@@ -350,6 +350,11 @@ function PrivacySettings({ user, onSaved }: { user: User; onSaved: (u: User) => 
       .then((d) => setBlocked(d.items))
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    setIsPrivate(user.isPrivate);
+    setShowDepartment(user.showDepartment);
+  }, [user.isPrivate, user.showDepartment]);
 
   async function update(patch: Record<string, unknown>) {
     try {

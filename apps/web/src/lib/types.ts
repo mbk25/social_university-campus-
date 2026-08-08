@@ -29,6 +29,8 @@ export interface User {
   bio?: string | null;
   department: string | null;
   classYear: number | null;
+  isPrivate: boolean;
+  showDepartment: boolean;
   karma: number;
   university: University | null;
   educations?: Education[];
