@@ -133,6 +133,7 @@ export interface Conversation {
   title: string | null;
   avatarUrl: string | null;
   peerUsername: string | null;
+  isOnline?: boolean;
   community: { id: string; slug: string; name: string; avatarUrl: string | null } | null;
   members: MiniUser[];
   lastMessage: Message | null;

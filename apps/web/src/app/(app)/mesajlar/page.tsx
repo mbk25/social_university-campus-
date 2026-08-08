@@ -39,9 +39,11 @@ export default function MessagesPage() {
     const handler = () => void load();
     socket?.on("conversation:updated", handler);
     socket?.on("message:new", handler);
+    socket?.on("presence:update", handler);
     return () => {
       socket?.off("conversation:updated", handler);
       socket?.off("message:new", handler);
+      socket?.off("presence:update", handler);
     };
   }, [load]);
 
@@ -55,7 +57,10 @@ export default function MessagesPage() {
     [items, query],
   );
 
-  const quickItems = items.filter((item) => item.type === "DIRECT").slice(0, 6);
+  const quickItems = items
+    .filter((item) => item.type === "DIRECT")
+    .sort((a, b) => Number(!!b.isOnline) - Number(!!a.isOnline))
+    .slice(0, 6);
 
   return (
     <div className="mx-auto h-[calc(100dvh-7.5rem)] min-h-[600px] w-full max-w-[1090px] overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg-elevated)] shadow-[0_24px_80px_-40px_rgba(0,0,0,.75)] sm:h-[calc(100dvh-2rem)]">
@@ -94,8 +99,9 @@ export default function MessagesPage() {
               <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
                 {quickItems.map((conversation) => (
                   <Link key={conversation.id} href={`/mesajlar/${conversation.id}`} className="w-[58px] shrink-0 text-center">
-                    <span className="inline-flex rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400 p-[2px]">
+                    <span className="relative inline-flex rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-amber-400 p-[2px]">
                       <Avatar src={conversation.avatarUrl} name={conversation.title ?? "Sohbet"} size="md" className="ring-2 ring-[var(--bg-elevated)]" />
+                      {conversation.isOnline && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[var(--bg-elevated)] bg-emerald-500" aria-label="Çevrimiçi" />}
                     </span>
                     <span className="mt-1.5 block truncate text-[11px] font-medium text-muted">{conversation.title ?? "Sohbet"}</span>
                   </Link>

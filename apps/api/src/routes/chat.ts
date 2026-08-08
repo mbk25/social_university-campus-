@@ -5,7 +5,7 @@ import { prisma } from "../db";
 import { badRequest, forbidden, notFound } from "../lib/errors";
 import { decodeCursor, encodeCursor, serializeMiniUser } from "../lib/serialize";
 import { requireUser } from "../plugins/auth";
-import { emitToConversation } from "../realtime/io";
+import { emitToConversation, isUserOnline } from "../realtime/io";
 import {
   assertMember,
   getOrCreateCommunityConversation,
@@ -41,7 +41,12 @@ type ConversationRow = Awaited<
   ReturnType<typeof prisma.conversation.findFirstOrThrow<{ include: typeof CONVERSATION_INCLUDE }>>
 >;
 
-function serializeConversation(conversation: ConversationRow, viewerId: string, unreadCount: number) {
+function serializeConversation(
+  conversation: ConversationRow,
+  viewerId: string,
+  unreadCount: number,
+  onlineUserIds = new Set<string>(),
+) {
   const others = conversation.members.filter((m) => m.userId !== viewerId);
   const isDirect = conversation.type === "DIRECT";
   const peer = isDirect ? others[0]?.user : null;
@@ -52,6 +57,7 @@ function serializeConversation(conversation: ConversationRow, viewerId: string, 
     title: isDirect ? peer?.displayName ?? "Silinmiş kullanıcı" : conversation.title,
     avatarUrl: isDirect ? peer?.avatarUrl ?? null : conversation.avatarUrl,
     peerUsername: peer?.username ?? null,
+    isOnline: !!peer && onlineUserIds.has(peer.id),
     community: conversation.community,
     members: conversation.members.map((m) => serializeMiniUser(m.user)),
     lastMessage: conversation.messages[0] ? serializeMessage(conversation.messages[0]) : null,
@@ -95,9 +101,21 @@ export default async function chatRoutes(app: FastifyInstance) {
         }),
       ),
     );
+    const directPeerIds = Array.from(
+      new Set(
+        conversations
+          .filter((conversation) => conversation.type === "DIRECT")
+          .map((conversation) => conversation.members.find((member) => member.userId !== user.id)?.userId)
+          .filter((id): id is string => !!id),
+      ),
+    );
+    const onlineChecks = await Promise.all(
+      directPeerIds.map(async (id) => ({ id, online: await isUserOnline(id) })),
+    );
+    const onlineUserIds = new Set(onlineChecks.filter((item) => item.online).map((item) => item.id));
 
     return {
-      items: conversations.map((c, i) => serializeConversation(c, user.id, unreadCounts[i])),
+      items: conversations.map((c, i) => serializeConversation(c, user.id, unreadCounts[i], onlineUserIds)),
       totalUnread: unreadCounts.reduce((a, b) => a + b, 0),
     };
   });

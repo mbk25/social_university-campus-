@@ -123,6 +123,7 @@ export interface Conversation {
   title: string | null;
   avatarUrl: string | null;
   peerUsername: string | null;
+  isOnline?: boolean;
   community: { id: string; slug: string; name: string } | null;
   members: MiniUser[];
   lastMessage: Message | null;
