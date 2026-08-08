@@ -3,12 +3,14 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, Text, TextInput, View } from "react-native";
 import { api } from "../../src/lib/api";
+import { useAuth } from "../../src/lib/auth";
 import { getSocket } from "../../src/lib/socket";
 import { palette, spacing, timeAgo } from "../../src/lib/theme";
 import type { Conversation } from "../../src/lib/types";
 import { Avatar, Divider, Empty, Loading } from "../../src/components/ui";
 
 export default function MessagesScreen() {
+  const { user } = useAuth();
   const [items, setItems] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,13 +49,14 @@ export default function MessagesScreen() {
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md }}>
             <View>
-              <Text style={{ color: palette.text, fontSize: 24, fontWeight: "800", letterSpacing: -0.4 }}>Mesajlar</Text>
-              <Text style={{ color: palette.textMuted, fontSize: 12.5, marginTop: 2 }}>Özel konuşmaların ve toplulukların</Text>
+              <Text style={{ color: palette.text, fontSize: 21, fontWeight: "800", letterSpacing: -0.4 }}>{user?.username ?? "Mesajlar"}</Text>
+              <Text style={{ color: palette.textMuted, fontSize: 12.5, marginTop: 2 }}>Özel konuşmaların</Text>
             </View>
             <Pressable onPress={() => router.push("/ara")} hitSlop={10} style={{ width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 19, backgroundColor: palette.bgElevated }}>
               <Ionicons name="create-outline" size={21} color={palette.text} />
             </Pressable>
           </View>
+          <Text style={{ color: palette.text, fontSize: 17, fontWeight: "800", marginTop: spacing.lg }}>Mesajlar</Text>
           <View style={{ height: 40, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, backgroundColor: palette.bgElevated, paddingHorizontal: 12 }}>
             <Ionicons name="search-outline" size={18} color={palette.textFaint} />
             <TextInput value={query} onChangeText={setQuery} placeholder="Mesajlarda ara" placeholderTextColor={palette.textFaint} style={{ flex: 1, color: palette.text, fontSize: 14 }} />
