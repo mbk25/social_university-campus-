@@ -268,7 +268,6 @@ function UploadNoteModal({
 
   const [title, setTitle] = useState("");
   const [courseName, setCourseName] = useState("");
-  const [courseCode, setCourseCode] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<"UNIVERSITY" | "GLOBAL">("UNIVERSITY");
   const [files, setFiles] = useState<MediaAsset[]>([]);
@@ -295,7 +294,6 @@ function UploadNoteModal({
       await api.post("/notes", {
         title: title.trim(),
         courseName: courseName.trim(),
-        courseCode: courseCode.trim() || undefined,
         description: description.trim() || undefined,
         department: user?.department,
         visibility,
@@ -306,7 +304,6 @@ function UploadNoteModal({
       onClose();
       setTitle("");
       setCourseName("");
-      setCourseCode("");
       setDescription("");
       setFiles([]);
     } catch (err) {
@@ -327,20 +324,12 @@ function UploadNoteModal({
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
-          <Input
-            label="Ders adı"
-            placeholder="Veri Yapıları"
-            value={courseName}
-            onChange={(e) => setCourseName(e.target.value)}
-          />
-          <Input
-            label="Ders kodu"
-            placeholder="CMPE250"
-            value={courseCode}
-            onChange={(e) => setCourseCode(e.target.value.toUpperCase())}
-          />
-        </div>
+        <Input
+          label="Ders adı"
+          placeholder="Veri Yapıları"
+          value={courseName}
+          onChange={(e) => setCourseName(e.target.value)}
+        />
 
         <Textarea
           label="Açıklama"
