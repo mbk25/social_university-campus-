@@ -19,7 +19,7 @@ import { Avatar, Loading } from "../../src/components/ui";
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, setCounts } = useAuth();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,6 +30,20 @@ export default function ChatScreen() {
   const [typingNames, setTypingNames] = useState<string[]>([]);
   const listRef = useRef<FlatList<Message>>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const syncUnreadMessages = useCallback(() => {
+    void api
+      .get<{ messages: number }>("/notifications/unread-count")
+      .then((counts) => setCounts({ messages: counts.messages }))
+      .catch(() => undefined);
+  }, [setCounts]);
+
+  const markConversationRead = useCallback(() => {
+    void api
+      .post(`/chat/conversations/${id}/read`, {})
+      .then(syncUnreadMessages)
+      .catch(() => undefined);
+  }, [id, syncUnreadMessages]);
 
   useEffect(() => {
     if (!id) return;
@@ -51,10 +65,11 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const socket = getSocket();
-    if (!socket || !id) return;
+    if (!id) return;
+    markConversationRead();
+    if (!socket) return;
 
     socket.emit("conversation:join", id);
-    socket.emit("conversation:read", id);
 
     const onMessage = (message: Message) => {
       if (message.conversationId !== id) return;
@@ -65,7 +80,7 @@ export default function ChatScreen() {
         if (withoutPending.some((m) => m.id === message.id)) return withoutPending;
         return [{ ...message, isMine: message.sender.id === user?.id }, ...withoutPending];
       });
-      socket.emit("conversation:read", id);
+      markConversationRead();
     };
 
     const onDeleted = ({ messageId }: { messageId: string }) => {
@@ -104,7 +119,7 @@ export default function ChatScreen() {
       socket.off("message:deleted", onDeleted);
       socket.off("typing:update", onTyping);
     };
-  }, [id, user?.id]);
+  }, [id, user?.id, markConversationRead]);
 
   const loadOlder = useCallback(async () => {
     if (!cursor || loadingMore) return;

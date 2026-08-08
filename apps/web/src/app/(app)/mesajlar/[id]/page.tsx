@@ -14,7 +14,7 @@ export default function ConversationPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const toast = useToast();
-  const { user } = useAuth();
+  const { user, setCounts } = useAuth();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,6 +36,20 @@ export default function ConversationPage() {
   const scrollToBottom = useCallback((smooth = false) => {
     bottomRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
   }, []);
+
+  const syncUnreadMessages = useCallback(() => {
+    void api
+      .get<{ messages: number }>("/notifications/unread-count")
+      .then((counts) => setCounts({ messages: counts.messages }))
+      .catch(() => undefined);
+  }, [setCounts]);
+
+  const markConversationRead = useCallback(() => {
+    void api
+      .post(`/chat/conversations/${id}/read`, {})
+      .then(syncUnreadMessages)
+      .catch(() => undefined);
+  }, [id, syncUnreadMessages]);
 
   // ---- İlk yükleme
   useEffect(() => {
@@ -70,10 +84,10 @@ export default function ConversationPage() {
   // ---- Socket olayları
   useEffect(() => {
     const socket = getSocket();
+    markConversationRead();
     if (!socket) return;
 
     socket.emit("conversation:join", id);
-    socket.emit("conversation:read", id);
 
     const onMessage = (message: Message) => {
       if (message.conversationId !== id) return;
@@ -85,7 +99,7 @@ export default function ConversationPage() {
         if (withoutPending.some((m) => m.id === message.id)) return withoutPending;
         return [...withoutPending, { ...message, isMine: message.sender.id === user?.id }];
       });
-      socket.emit("conversation:read", id);
+      markConversationRead();
       requestAnimationFrame(() => scrollToBottom(true));
     };
 
@@ -129,7 +143,7 @@ export default function ConversationPage() {
       socket.off("message:deleted", onDeleted);
       socket.off("typing:update", onTyping);
     };
-  }, [id, user?.id, scrollToBottom]);
+  }, [id, user?.id, scrollToBottom, markConversationRead]);
 
   // ---- Yukarı kaydırınca eski mesajlar
   async function loadOlder() {
