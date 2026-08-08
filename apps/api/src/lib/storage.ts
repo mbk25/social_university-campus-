@@ -55,11 +55,18 @@ export async function saveFile(input: SaveFileInput): Promise<{ url: string; key
       }),
     );
 
-    // `r2.dev` adresi bazı Türkiye ağlarında erişilemeyebiliyor. Dosyayı API
-    // üzerinden servis etmek hem bu erişim sorununu çözer hem de ileride kendi
-    // medya alan adımıza geçene kadar URL'leri tek yerde tutar.
-    const apiBase = env.API_PUBLIC_URL.replace(/\/+$/, "");
-    return { url: `${apiBase}/media/${key}`, key };
+    const publicBase = (env.S3_PUBLIC_URL || "").replace(/\/+$/, "");
+
+    // `r2.dev` adresi bazı Türkiye ağlarında erişilemeyebiliyor. Kendi CDN
+    // alan adımız bağlanana kadar görselleri API üzerinden servis et. Daha
+    // sonra S3_PUBLIC_URL `https://cdn.kampusum.me` yapılınca bu koşul otomatik
+    // olarak kalkar ve görseller doğrudan CDN'den gelir.
+    if (/\.r2\.dev$/i.test(new URL(publicBase).hostname)) {
+      const apiBase = env.API_PUBLIC_URL.replace(/\/+$/, "");
+      return { url: `${apiBase}/media/${key}`, key };
+    }
+
+    return { url: `${publicBase}/${key}`, key };
   }
 
   const dir = path.join(env.UPLOAD_DIR, input.folder);
